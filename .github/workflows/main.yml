@@ -8,7 +8,11 @@ on:
 
 jobs:
   build-and-release:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -27,23 +31,31 @@ jobs:
           echo "The app version is ${{ env.APP_VERSION }}"
         shell: bash
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.4'
-
-      - name: Install dependencies
+      - name: Setup Flutter environment
         run: flutter pub get
 
-      - name: Build for Windows
-        run: |
-          flutter config --enable-windows-desktop
-          flutter build windows
+      - name: Determine branch type
+        id: determine-branch
+        run: echo "::set-output name=branch_type::$(if [[ $GITHUB_REF =~ ^refs/heads/release/.*$ ]]; then echo 'release'; else echo 'other'; fi)"
+        shell: bash
 
-      - name: Build for macOS
+      - name: Build and package app for macOS
+        if: matrix.os == 'macos-latest' && steps.determine-branch.outputs.branch_type == 'release'
         run: |
-          flutter config --enable-macos-desktop
-          flutter build macos
+          flutter build macos --release
+          mkdir -p release
+          hdiutil create -volname "${{ env.APP_NAME }}" \
+                         -srcfolder "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app" \
+                         -ov -format UDZO "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg"
+        shell: bash
+
+      - name: Build and package app for Windows
+        if: matrix.os == 'windows-latest' && steps.determine-branch.outputs.branch_type == 'release'
+        run: |
+          flutter build windows --release
+          mkdir -p release
+          cp "build/windows/x64/runner/Release/${{ env.APP_NAME }}.exe" "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe"
+        shell: pwsh
 
       - name: Create GitHub Release
         uses: actions/create-release@v1
@@ -57,15 +69,15 @@ jobs:
       - name: Upload Windows build to GitHub Release
         uses: actions/upload-release-asset@v1
         with:
-          asset_name: windows-build.zip
-          asset_path: build/windows/Release/${{ env.APP_NAME }}.exe
+          asset_name: release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
+          asset_path: release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
           upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_content_type: application/octet-stream
 
       - name: Upload macOS build to GitHub Release
         uses: actions/upload-release-asset@v1
         with:
-          asset_name: macos-build.zip
-          asset_path: build/macos/Release/${{ env.APP_NAME }}.app
+          asset_name: release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
+          asset_path: release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
           upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_content_type: application/x-apple-diskimage
