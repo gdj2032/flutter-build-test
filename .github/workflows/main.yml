@@ -7,7 +7,7 @@ on:
       - /^release\/.*$/
 
 jobs:
-  build-and-release:
+  build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -26,8 +26,6 @@ jobs:
           APP_NAME=$(grep -E '^name:' pubspec.yaml | awk '{print $2}')
           echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
           echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
-          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
-          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Print APP_NAME and APP_VERSION for macOS/Linux
@@ -46,8 +44,6 @@ jobs:
           $APP_VERSION = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'version:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
           echo "APP_VERSION=$APP_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
           echo "APP_NAME=$APP_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append
-          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
-          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
         shell: pwsh
 
       - name: Print APP_NAME and APP_VERSION  for Windows
@@ -99,14 +95,61 @@ jobs:
           release_name: 'Release ${{ env.APP_NAME }} ${{ env.APP_VERSION }}'
           body: 'Release of Flutter PC build'
 
+  upload_assets:
+    needs: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # macOS/Linux get app version and name
+
+      - name: Get app version and name for macOS/Linux
+        if: matrix.os != 'windows-latest'
+        run: |
+          APP_VERSION=$(grep -E '^version:' pubspec.yaml | awk '{print $2}' | tr -d "'")
+          APP_NAME=$(grep -E '^name:' pubspec.yaml | awk '{print $2}')
+          echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
+          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Print APP_NAME and APP_VERSION for macOS/Linux
+        if: matrix.os != 'windows-latest'
+        run: |
+          echo "The app name is ${{ env.APP_NAME }}"
+          echo "The app version is ${{ env.APP_VERSION }}"
+        shell: bash
+
+      # Windows get app version and name
+
+      - name: Get app version and name for Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          $APP_NAME = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'name:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
+          $APP_VERSION = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'version:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
+          echo "APP_VERSION=$APP_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "APP_NAME=$APP_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append
+        shell: pwsh
+
+      - name: Print APP_NAME and APP_VERSION  for Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "The app name is ${{ env.APP_NAME }}"
+          echo "The app version is ${{ env.APP_VERSION }}"
+        shell: pwsh
+
       - name: Upload Windows build to GitHub Release
         if: matrix.os == 'windows-latest'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
           asset_name: release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
           asset_content_type: application/octet-stream
 
@@ -116,7 +159,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
           asset_name: release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
           asset_content_type: application/x-apple-diskimage
