@@ -112,7 +112,10 @@ jobs:
 
       - name: Debug upload URL
         run: |
-          echo "needs : ${{ needs }}"
+          echo "needs1 : ${{ needs }}"
+          echo "needs2 : ${{ needs.build }}"
+          echo "needs3 : ${{ needs.build.create_release }}"
+          echo "needs4 : ${{ needs.build.create_release.outputs.upload_url }}"
           echo "Upload URL create_release : ${{ needs.create_release.outputs.upload_url }}"
 
       # macOS/Linux get app version and name
@@ -157,7 +160,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          upload_url: ${{ needs.build.create_release.outputs.upload_url }}
           asset_path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
           asset_name: release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
           asset_content_type: application/octet-stream
@@ -168,7 +171,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          upload_url: ${{ needs.build.create_release.outputs.upload_url }}
           asset_path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
           asset_name: release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
           asset_content_type: application/x-apple-diskimage
