@@ -17,19 +17,50 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Get app version and name
+      # macOS/Linux get app version and name
+
+      - name: Get app version and name for macOS/Linux
+        if: matrix.os != 'windows-latest'
         run: |
           APP_VERSION=$(grep -E '^version:' pubspec.yaml | awk '{print $2}' | tr -d "'")
           APP_NAME=$(grep -E '^name:' pubspec.yaml | awk '{print $2}')
           echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
           echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
+          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
+          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
         shell: bash
 
-      - name: Print APP_NAME and APP_VERSION
+      - name: Print APP_NAME and APP_VERSION for macOS/Linux
+        if: matrix.os != 'windows-latest'
         run: |
           echo "The app name is ${{ env.APP_NAME }}"
           echo "The app version is ${{ env.APP_VERSION }}"
         shell: bash
+
+      # Windows get app version and name
+
+      - name: Get app version and name for Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          $APP_NAME = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'name:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
+          $APP_VERSION = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'version:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
+          echo "APP_VERSION=$APP_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "APP_NAME=$APP_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
+          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
+        shell: pwsh
+
+      - name: Print APP_NAME and APP_VERSION  for Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "The app name is ${{ env.APP_NAME }}"
+          echo "The app version is ${{ env.APP_VERSION }}"
+        shell: pwsh
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.4'
 
       - name: Setup Flutter environment
         run: flutter pub get
