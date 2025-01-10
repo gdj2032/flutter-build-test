@@ -3,7 +3,8 @@ name: Flutter Build and Release
 on:
   push:
     branches:
-      - main
+      - 'release/0.0.1'
+      - /^release\/.*$/
 
 jobs:
   build-and-release:
