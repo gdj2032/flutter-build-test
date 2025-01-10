@@ -89,13 +89,14 @@ jobs:
         shell: pwsh
 
       - name: Create GitHub Release
+        id: create-release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           tag_name: 'v${{ env.APP_VERSION }}'
-          release_name: 'Flutter PC Release'
-          body: 'Automated release of Flutter PC build'
+          release_name: 'Release ${{ env.APP_NAME }} ${{ env.APP_VERSION }}'
+          body: 'Release of Flutter PC build'
 
       - name: Upload Windows build to GitHub Release
         if: matrix.os == 'windows-latest'
