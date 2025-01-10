@@ -126,6 +126,8 @@ jobs:
 
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
+      APP_NAME: ${{ env.APP_NAME }}
+      APP_VERSION: ${{ env.APP_VERSION }}
 
   upload_assets:
     needs: build
@@ -140,48 +142,9 @@ jobs:
 
       - name: Debug upload URL
         run: |
-          echo "needs1 : ${{ needs }}"
-          echo "needs2 : ${{ needs.build }}"
-          echo "needs3 : ${{ needs.build.outputs }}"
-          echo "needs4 : ${{ needs.build.outputs.upload_url }}"
-          echo "needs4 : ${{ needs.build.outputs.create_release }}"
-          echo "needs5 : ${{ needs.build.outputs.create_release.upload_url }}"
-
-      # macOS/Linux get app version and name
-
-      - name: Get app version and name for macOS/Linux
-        if: matrix.os != 'windows-latest'
-        run: |
-          APP_VERSION=$(grep -E '^version:' pubspec.yaml | awk '{print $2}' | tr -d "'")
-          APP_NAME=$(grep -E '^name:' pubspec.yaml | awk '{print $2}')
-          echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
-          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
-        shell: bash
-
-      - name: Print APP_NAME and APP_VERSION for macOS/Linux
-        if: matrix.os != 'windows-latest'
-        run: |
-          echo "The app name is ${{ env.APP_NAME }}"
-          echo "The app version is ${{ env.APP_VERSION }}"
-        shell: bash
-
-      # Windows get app version and name
-
-      - name: Get app version and name for Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          $APP_NAME = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'name:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
-          $APP_VERSION = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'version:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
-          echo "APP_VERSION=$APP_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
-          echo "APP_NAME=$APP_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append
-        shell: pwsh
-
-      - name: Print APP_NAME and APP_VERSION  for Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          echo "The app name is ${{ env.APP_NAME }}"
-          echo "The app version is ${{ env.APP_VERSION }}"
-        shell: pwsh
+          echo "upload_url : ${{ needs.build.outputs.upload_url }}"
+          echo "APP_NAME : ${{ needs.build.outputs.APP_NAME }}"
+          echo "APP_VERSION : ${{ needs.build.outputs.APP_VERSION }}"
 
       - name: Upload Windows build to GitHub Release
         if: matrix.os == 'windows-latest'
@@ -190,8 +153,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ needs.build.outputs.upload_url }}
-          asset_path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
-          asset_name: release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
+          asset_path: release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.exe
+          asset_name: release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.exe
           asset_content_type: application/octet-stream
 
       - name: Upload macOS build to GitHub Release
@@ -201,6 +164,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ needs.build.outputs.upload_url }}
-          asset_path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
-          asset_name: release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
+          asset_path: release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.dmg
+          asset_name: release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.dmg
           asset_content_type: application/x-apple-diskimage
