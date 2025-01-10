@@ -26,8 +26,6 @@ jobs:
           APP_NAME=$(grep -E '^name:' pubspec.yaml | awk '{print $2}')
           echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
           echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
-          echo "app_name=${{ env.APP_NAME }}" >> $GITHUB_OUTPUT
-          echo "app_version=${{ env.APP_VERSION }}" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Print APP_NAME and APP_VERSION for macOS/Linux
@@ -46,8 +44,6 @@ jobs:
           $APP_VERSION = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'version:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
           echo "APP_VERSION=$APP_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
           echo "APP_NAME=$APP_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append
-          echo "app_name=${{ env.APP_NAME }}" >> $GITHUB_OUTPUT
-          echo "app_version=${{ env.APP_VERSION }}" >> $GITHUB_OUTPUT
         shell: pwsh
 
       - name: Print APP_NAME and APP_VERSION  for Windows
@@ -56,6 +52,34 @@ jobs:
           echo "The app name is ${{ env.APP_NAME }}"
           echo "The app version is ${{ env.APP_VERSION }}"
         shell: pwsh
+
+      - name: Set env for macOS/Linux
+        if: matrix.os != 'windows-latest'
+        run: |
+          echo "app_name=${{ env.APP_NAME }}" >> $GITHUB_OUTPUT
+          echo "app_version=${{ env.APP_VERSION }}" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Set env for Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "app_name=${{ env.APP_NAME }}" >> $GITHUB_OUTPUT
+          echo "app_version=${{ env.APP_VERSION }}" >> $GITHUB_OUTPUT
+        shell: pwsh
+
+      - name: Print app_name and app_version for macOS/Linux
+        if: matrix.os != 'windows-latest'
+        run: |
+          echo "The app name is ${{ steps.set_env.outputs.app_name }}"
+          echo "The app version is ${{ steps.set_env.outputs.app_version }}"
+        shell: pwsh
+
+      - name: Print app_name and app_version for Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "The app name is ${{ steps.set_env.outputs.app_name }}"
+          echo "The app version is ${{ steps.set_env.outputs.app_version }}"
+        shell: bash
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
