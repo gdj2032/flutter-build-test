@@ -112,7 +112,6 @@ jobs:
 
       - name: Debug upload URL
         run: |
-          echo "needs1 : ${{ fromJson(needs) }}"
           echo "needs1 : ${{ needs }}"
           echo "needs1 : ${{ needs.build }}"
           echo "needs2 : ${{ needs.build.steps }}"
