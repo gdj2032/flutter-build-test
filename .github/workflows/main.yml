@@ -13,10 +13,6 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
 
-    outputs:
-      app_version: ${{ steps.set_env.outputs.app_version }}
-      app_name: ${{ steps.set_env.outputs.app_name }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -30,8 +26,8 @@ jobs:
           APP_NAME=$(grep -E '^name:' pubspec.yaml | awk '{print $2}')
           echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
           echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
-          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
-          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
+          echo "app_name=${{ env.APP_NAME }}" >> $GITHUB_OUTPUT
+          echo "app_version=${{ env.APP_VERSION }}" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Print APP_NAME and APP_VERSION for macOS/Linux
@@ -50,8 +46,8 @@ jobs:
           $APP_VERSION = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'version:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
           echo "APP_VERSION=$APP_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
           echo "APP_NAME=$APP_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append
-          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
-          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
+          echo "app_name=${{ env.APP_NAME }}" >> $GITHUB_OUTPUT
+          echo "app_version=${{ env.APP_VERSION }}" >> $GITHUB_OUTPUT
         shell: pwsh
 
       - name: Print APP_NAME and APP_VERSION  for Windows
@@ -91,6 +87,10 @@ jobs:
           mkdir -p release
           cp "build/windows/x64/runner/Release/${{ env.APP_NAME }}.exe" "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe"
         shell: pwsh
+
+    outputs:
+      app_version: ${{ steps.set_env.outputs.app_version }}
+      app_name: ${{ steps.set_env.outputs.app_name }}
 
   release:
     needs: build  # 确保 build 完成后再进行发布
