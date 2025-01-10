@@ -96,8 +96,7 @@ jobs:
             --background "assets/images/install_background.png" \
             --window-pos 200 120 \
             --window-size 600 400 \
-            --icon "MyApp.app" 200 190 \
-            --hide-extension "MyApp.app" \
+            --icon "$APP_NAME.app" 200 190 \
             --app-drop-link 400 185 \
             "release/release-$APP_NAME-$APP_VERSION.dmg" \
             "build/macos/Build/Products/Release/$APP_NAME.app"
