@@ -1,0 +1,143 @@
+name: Flutter Build and Release
+
+on:
+  push:
+    branches:
+      - 'release/0.0.1'
+      - /^release\/.*$/
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+
+    outputs:
+      app_version: ${{ steps.set_env.outputs.app_version }}
+      app_name: ${{ steps.set_env.outputs.app_name }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # macOS/Linux get app version and name
+
+      - name: Get app version and name for macOS/Linux
+        if: matrix.os != 'windows-latest'
+        run: |
+          APP_VERSION=$(grep -E '^version:' pubspec.yaml | awk '{print $2}' | tr -d "'")
+          APP_NAME=$(grep -E '^name:' pubspec.yaml | awk '{print $2}')
+          echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
+          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
+          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
+          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Print APP_NAME and APP_VERSION for macOS/Linux
+        if: matrix.os != 'windows-latest'
+        run: |
+          echo "The app name is ${{ env.APP_NAME }}"
+          echo "The app version is ${{ env.APP_VERSION }}"
+        shell: bash
+
+      # Windows get app version and name
+
+      - name: Get app version and name for Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          $APP_NAME = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'name:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
+          $APP_VERSION = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'version:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
+          echo "APP_VERSION=$APP_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "APP_NAME=$APP_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
+          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
+        shell: pwsh
+
+      - name: Print APP_NAME and APP_VERSION  for Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "The app name is ${{ env.APP_NAME }}"
+          echo "The app version is ${{ env.APP_VERSION }}"
+        shell: pwsh
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.4'
+
+      - name: Setup Flutter environment
+        run: flutter pub get
+
+      - name: Determine branch type
+        id: determine-branch
+        run: echo "::set-output name=branch_type::$(if [[ $GITHUB_REF =~ ^refs/heads/release/.*$ ]]; then echo 'release'; else echo 'other'; fi)"
+        shell: bash
+
+      - name: Build and package app for macOS
+        if: matrix.os == 'macos-latest' && steps.determine-branch.outputs.branch_type == 'release'
+        run: |
+          flutter build macos --release
+          mkdir -p release
+          hdiutil create -volname "${{ env.APP_NAME }}" \
+                         -srcfolder "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app" \
+                         -ov -format UDZO "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg"
+        shell: bash
+
+      - name: Build and package app for Windows
+        if: matrix.os == 'windows-latest' && steps.determine-branch.outputs.branch_type == 'release'
+        run: |
+          flutter build windows --release
+          mkdir -p release
+          cp "build/windows/x64/runner/Release/${{ env.APP_NAME }}.exe" "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe"
+        shell: pwsh
+
+  release:
+    needs: build  # 确保 build 完成后再进行发布
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Print app_name and app_version
+      run: |
+        echo "The app name is ${{ needs.build.outputs.app_name }}"
+        echo "The app version is ${{ needs.build.outputs.app_version }}"
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: "v${{ needs.build.outputs.app_version }}"
+        release_name: "Release v${{ needs.build.outputs.app_version }}"
+        body: "Release of version ${{ needs.build.outputs.app_version }}"
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset for macOS
+      if: github.ref == 'refs/heads/release/macOS'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.dmg
+        asset_name: release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.dmg
+        asset_content_type: application/x-apple-diskimage
+
+    - name: Upload Release Asset for Windows
+      if: github.ref == 'refs/heads/release/windows'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.exe
+        asset_name: release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.exe
+        asset_content_type: application/octet-stream
