@@ -66,15 +66,41 @@ jobs:
         run: echo "::set-output name=branch_type::$(if [[ $GITHUB_REF =~ ^refs/heads/release/.*$ ]]; then echo 'release'; else echo 'other'; fi)"
         shell: bash
 
+      # - name: Build and package app for macOS
+      #   if: matrix.os == 'macos-latest' && steps.determine-branch.outputs.branch_type == 'release'
+      #   run: |
+      #     flutter build macos --release
+      #     mkdir -p release
+      #     hdiutil create -volname "${{ env.APP_NAME }}" \
+      #                    -srcfolder "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app" \
+      #                    -ov -format UDZO "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg"
+      #   shell: bash
       - name: Build and package app for macOS
-        if: matrix.os == 'macos-latest' && steps.determine-branch.outputs.branch_type == 'release'
+        if: matrix.os == 'macos-latest'
         run: |
           flutter build macos --release
           mkdir -p release
-          hdiutil create -volname "${{ env.APP_NAME }}" \
-                         -srcfolder "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app" \
-                         -ov -format UDZO "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg"
-        shell: bash
+
+      - name: Install create-dmg via Homebrew
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install create-dmg
+
+      - name: Create DMG using create-dmg
+        if: matrix.os == 'macos-latest'
+        run: |
+          APP_NAME=${{ env.APP_NAME }}
+          APP_VERSION=${{ env.APP_VERSION }}
+          create-dmg \
+            --volname "$APP_NAME $APP_VERSION Installer" \
+            --background "assets/images/install_background.png" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon "MyApp.app" 200 190 \
+            --hide-extension "MyApp.app" \
+            --app-drop-link 400 185 \
+            "release/release-$APP_NAME-$APP_VERSION.dmg" \
+            "build/macos/Build/Products/Release/$APP_NAME.app"
 
       - name: Build and package app for Windows
         if: matrix.os == 'windows-latest' && steps.determine-branch.outputs.branch_type == 'release'
@@ -113,14 +139,11 @@ jobs:
       - name: Debug upload URL
         run: |
           echo "needs1 : ${{ needs }}"
-          echo "needs1 : ${{ needs.build }}"
-          echo "needs2 : ${{ needs.build.steps }}"
+          echo "needs2 : ${{ needs.build }}"
           echo "needs3 : ${{ needs.build.outputs }}"
-          echo "needs3 : ${{ needs.build.outputs.upload_url }}"
-          echo "needs3 : ${{ needs.build.steps.create_release }}"
-          echo "needs3 : ${{ needs.build.steps.create_release.outputs.upload_url }}"
-          echo "needs4 : ${{ needs.build.create_release.outputs.upload_url }}"
-          echo "needs5 : ${{ needs.build.steps.create_release.outputs.upload_url }}"
+          echo "needs4 : ${{ needs.build.outputs.upload_url }}"
+          echo "needs4 : ${{ needs.build.outputs.create_release }}"
+          echo "needs5 : ${{ needs.build.outputs.create_release.upload_url }}"
 
       # macOS/Linux get app version and name
 
@@ -164,7 +187,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
-          upload_url: ${{ needs.build.steps.create_release.outputs.upload_url }}
+          upload_url: ${{ needs.build.outputs.upload_url }}
           asset_path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
           asset_name: release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
           asset_content_type: application/octet-stream
@@ -175,7 +198,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
-          upload_url: ${{ needs.build.steps.create_release.outputs.upload_url }}
+          upload_url: ${{ needs.build.outputs.upload_url }}
           asset_path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
           asset_name: release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
           asset_content_type: application/x-apple-diskimage
