@@ -85,6 +85,15 @@ jobs:
         shell: pwsh
 
   release:
+    permissions:
+      contents: 'read'
+      actions: 'write'
+      packages: 'write'
+      deployments: 'write'
+      repository-projects: 'write'
+      issues: 'write'
+      discussions: 'write'
+      pages: 'write'
     needs: build
     runs-on: ${{ matrix.os }}
     strategy:
