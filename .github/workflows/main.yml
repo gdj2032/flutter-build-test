@@ -85,7 +85,7 @@ jobs:
         shell: pwsh
 
       - name: Create GitHub Release
-        id: create-release
+        id: create_release
         if: matrix.os == 'macos-latest'
         uses: actions/create-release@v1
         env:
@@ -94,6 +94,10 @@ jobs:
           tag_name: 'v${{ env.APP_VERSION }}'
           release_name: 'Release ${{ env.APP_NAME }} ${{ env.APP_VERSION }}'
           body: 'Release of Flutter PC build'
+
+      - name: Debug upload URL
+        run: |
+          echo "Upload URL: ${{ steps.create_release.outputs.upload_url }}"
 
   upload_assets:
     needs: build
@@ -105,6 +109,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Debug upload URL
+        run: |
+          echo "needs : ${{ needs }}"
+          echo "Upload URL create_release : ${{ needs.create_release.outputs.upload_url }}"
 
       # macOS/Linux get app version and name
 
