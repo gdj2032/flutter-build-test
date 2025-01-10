@@ -101,6 +101,8 @@ jobs:
       - name: Upload Windows build to GitHub Release
         if: matrix.os == 'windows-latest'
         uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_path: release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
@@ -110,6 +112,8 @@ jobs:
       - name: Upload macOS build to GitHub Release
         if: matrix.os == 'macos-latest'
         uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_path: release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
