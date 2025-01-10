@@ -37,7 +37,7 @@ jobs:
 
       - name: Build for Windows
         run: |
-          flutter config --enable-macos-desktop
+          flutter config --enable-windows-desktop
           flutter build windows
 
       - name: Build for macOS
@@ -50,7 +50,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: 'v1.0.0'
+          tag_name: 'v${{ env.APP_VERSION }}'
           release_name: 'Flutter PC Release'
           body: 'Automated release of Flutter PC build'
 
