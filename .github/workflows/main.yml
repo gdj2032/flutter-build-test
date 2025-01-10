@@ -90,6 +90,7 @@ jobs:
 
       - name: Create GitHub Release
         id: create-release
+        if: matrix.os == 'windows-latest'
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
