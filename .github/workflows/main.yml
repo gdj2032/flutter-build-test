@@ -38,7 +38,6 @@ jobs:
       - name: Build for Windows
         run: |
           flutter config --enable-macos-desktop
-          flutter config --enable-windows-desktop
           flutter build windows
 
       - name: Build for macOS
