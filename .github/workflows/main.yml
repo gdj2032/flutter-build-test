@@ -101,6 +101,10 @@ jobs:
             "release/release-$APP_NAME-$APP_VERSION.dmg" \
             "build/macos/Build/Products/Release/$APP_NAME.app"
 
+      - name: List files in release directory
+        if: matrix.os == 'macos-latest'
+        run: ls -la ./release/
+
       - name: Build and package app for Windows
         if: matrix.os == 'windows-latest' && steps.determine-branch.outputs.branch_type == 'release'
         run: |
@@ -146,6 +150,9 @@ jobs:
           echo "APP_NAME : ${{ needs.build.outputs.APP_NAME }}"
           echo "APP_VERSION : ${{ needs.build.outputs.APP_VERSION }}"
 
+      - name: Print working directory
+        run: pwd
+
       - name: Upload Windows build to GitHub Release
         if: matrix.os == 'windows-latest'
         uses: actions/upload-release-asset@v1
@@ -153,7 +160,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ needs.build.outputs.upload_url }}
-          asset_path: release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.exe
+          asset_path: ./release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.exe
           asset_name: release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.exe
           asset_content_type: application/octet-stream
 
@@ -164,6 +171,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ needs.build.outputs.upload_url }}
-          asset_path: release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.dmg
+          asset_path: ./release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.dmg
           asset_name: release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.dmg
           asset_content_type: application/x-apple-diskimage
