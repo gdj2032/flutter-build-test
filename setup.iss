@@ -2,7 +2,7 @@
 
 #define MyAppName "flutter_build_test"
 #define MyAppVersion "0.0.1"
-#define OutputDir "./release"
+#define OutputDir "release"
 #define OutputBaseFilename "release-{#MyAppName}-{#MyAppVersion}"
 
 [Setup]
