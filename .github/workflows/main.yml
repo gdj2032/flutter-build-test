@@ -11,7 +11,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
+        # os: [macos-latest, windows-latest]
+        os: [windows-latest]
 
     outputs:
       app_name: ${{ steps.get_app_info.outputs.app_name || steps.get_app_info_win.outputs.app_name }}
@@ -91,49 +92,22 @@ jobs:
           Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
           choco feature enable -n allowGlobalConfirmation
 
-      - name: Install Advanced Installer
+      - name: Install Inno Setup
         if: matrix.os == 'windows-latest'
         run: |
-          # Install Advanced Installer
-          choco install advanced-installer --version=22.3 -y
-
-          # Refresh environment variables to pick up changes made by the installer
-          refreshenv
-
-          # Define the expected path for aiCmd.exe
-          $advancedInstallerPath = "C:\Program Files (x86)\Caphyon\Advanced Installer 22.3\bin\x64"
-
-          # Verify installation path exists
-          if (-not (Test-Path $advancedInstallerPath)) {
-            Write-Host "Error: Advanced Installer not found at expected path: $advancedInstallerPath"
-            exit 1
-          }
-
-          # Add Advanced Installer bin path to the current session's PATH
-          $env:Path += ";$advancedInstallerPath"
-
-          # Verify aiCmd.exe is available in the updated PATH
-          $aiCmdPath = Get-Command aiCmd.exe -ErrorAction SilentlyContinue
-          if (-not $aiCmdPath) {
-            Write-Host "Error: aiCmd.exe not found in PATH. Please check the installation."
-            exit 1
-          } else {
-            Write-Host "aiCmd.exe found at $($aiCmdPath.Definition)"
-          }
+          choco install innosetup --version=6.2.0 -y
 
       - name: Build Windows app
         if: matrix.os == 'windows-latest'
         run: |
           flutter build windows --release
-          mkdir -p release
-          cp "build/windows/x64/Release/${{ env.APP_NAME }}.exe" ./release/
 
-      - name: Create Installer using Advanced Installer
+      - name: Create Installer using Inno Setup
         if: matrix.os == 'windows-latest'
         run: |
-          # Directly use the full path to aiCmd.exe or rely on PATH
-          $aiCmdPath = (Get-Command aiCmd.exe -ErrorAction Stop).Definition
-          & $aiCmdPath /build .\config.ai /projectPath="${GITHUB_WORKSPACE}" /outputPath="./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe"
+          # Directly use the full path to innosetup.exe or rely on PATH
+          $innosetupPath = (Get-Command innosetup.exe -ErrorAction Stop).Definition
+          & $innosetupPath /SILENT /CONFIGFILE=.\setup.iss /OUTPUTDIR="./release" /OUTPUTFILE="release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe"
 
       # 上传构建产物
       - name: Upload macOS artifact
