@@ -3,7 +3,7 @@
 #define MyAppName "flutter_build_test"
 #define MyAppVersion "0.0.1"
 #define OutputDir "release"
-#define OutputBaseFilename "release-{#MyAppName}-{#MyAppVersion}"
+#define OutputBaseFilename "setup"
 
 [Setup]
 ; 应用程序的基本信息
@@ -12,7 +12,7 @@ AppVersion={#MyAppVersion}
 DefaultDirName={pf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 OutputDir={#OutputDir}
-OutputBaseFilename={#OutputBaseFilename}
+OutputBaseFilename={release-{#MyAppName}-{#MyAppVersion}}
 Compression=lzma
 SolidCompression=yes
 
