@@ -67,19 +67,27 @@ jobs:
           flutter build macos --release
           mkdir -p release
 
-      - name: Install create-dmg
-        if: matrix.os == 'macos-latest'
-        id: create-dmg-cache
+      - name: Cache Homebrew dependencies
+        id: cache-homebrew
         uses: actions/cache@v2
         with:
-          path: /usr/local/bin/create-dmg
+          path: /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core
+          key: homebrew-dependencies-${{ runner.os }}-v1
+          restore-keys: |
+            homebrew-dependencies-${{ runner.os }}-
+
+      - name: Install create-dmg via Homebrew
+        if: matrix.os == 'macos-latest' && steps.cache-homebrew.outputs.cache-hit != 'true'
+        run: brew install create-dmg
+
+      - name: Cache create-dmg
+        id: cache-create-dmg
+        uses: actions/cache@v2
+        with:
+          path: /usr/local/Caskroom/create-dmg
           key: create-dmg-${{ runner.os }}-v1
           restore-keys: |
             create-dmg-${{ runner.os }}-
-
-      - name: Install create-dmg
-        if: matrix.os == 'macos-latest' && steps.create-dmg-cache.outputs.cache-hit != 'true'
-        run: brew install create-dmg
 
       - name: Create DMG for macOS
         if: matrix.os == 'macos-latest'
@@ -95,34 +103,44 @@ jobs:
             "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app"
 
       # Windows 构建
-      - name: Install Chocolatey
-        if: matrix.os == 'windows-latest'
+      - name: Cache Chocolatey
         id: chocolatey-cache
         uses: actions/cache@v2
         with:
           path: C:\ProgramData\chocolatey
-          key: chocolatey-${{ runner.os }}-v1
+          key: ${{ runner.os }}-chocolatey-v1
           restore-keys: |
-            chocolatey-${{ runner.os }}-
+            ${{ runner.os }}-chocolatey-
 
-      - name: Install Chocolatey
+      - name: Install Chocolatey (if cache miss)
         if: matrix.os == 'windows-latest' && steps.chocolatey-cache.outputs.cache-hit != 'true'
         run: |
+          Write-Host "Installing Chocolatey..."
           Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+          choco feature enable -n allowGlobalConfirmation
 
-      - name: Install Advanced Installer
-        if: matrix.os == 'windows-latest'
+      - name: Check Chocolatey installation
+        run: choco --version
+
+      - name: Cache Advanced Installer
         id: advanced-installer-cache
         uses: actions/cache@v2
         with:
           path: C:\Program Files (x86)\Caphyon\Advanced Installer 22.3
-          key: advanced-installer-${{ runner.os }}-v1
+          key: ${{ runner.os }}-advanced-installer-v1
           restore-keys: |
-            advanced-installer-${{ runner.os }}-
+            ${{ runner.os }}-advanced-installer-
 
       - name: Install Advanced Installer (if cache miss)
         if: matrix.os == 'windows-latest' && steps.advanced-installer-cache.outputs.cache-hit != 'true'
-        run: choco install advanced-installer --version=22.3 -y
+        run: |
+          Write-Host "Installing Advanced Installer..."
+          choco install advanced-installer --version=22.3 -y
+
+      - name: Check Advanced Installer installation
+        run: |
+          Write-Host "Checking Advanced Installer installation..."
+          & 'C:\Program Files (x86)\Caphyon\Advanced Installer 22.3\bin\x64\aiCmd.exe' /?
 
       - name: Check aiCmd path
         if: matrix.os == 'windows-latest'
@@ -180,7 +198,8 @@ jobs:
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          # GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.build.outputs.app_version }}
         with:
           tag_name: "v${{ steps.get_version_name.outputs.app_version }}"
@@ -192,8 +211,17 @@ jobs:
             release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.dmg
             release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.exe
 
-      - name: Merge to Main/Master
-        if: startsWith(github.ref, 'refs/tags/release/')
+  release_and_merge:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/release/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # 确保所有历史记录都被获取，以便能够正确合并
+
+      - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
@@ -202,6 +230,26 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: false
           prerelease: false
-          name: Release ${{ github.ref }}
+          name: "Release ${{ github.ref }}"
           body: |
             New release for ${{ github.ref }}
+
+      - name: Merge to Main/Master
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          MAIN_BRANCH="main"  # 或者 "master" 根据你的默认分支名称
+          CURRENT_BRANCH=$(echo $GITHUB_REF | cut -d'/' -f3)
+
+          # 检查是否已经有最新的主分支
+          git fetch origin $MAIN_BRANCH
+          git checkout $MAIN_BRANCH
+          git pull origin $MAIN_BRANCH
+
+          # 合并当前分支到主分支
+          git merge --no-ff $CURRENT_BRANCH -m "Merge branch '$CURRENT_BRANCH' into $MAIN_BRANCH"
+
+          # 推送更新到远程仓库
+          git push origin $MAIN_BRANCH
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
