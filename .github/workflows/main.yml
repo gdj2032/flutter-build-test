@@ -77,11 +77,20 @@ jobs:
         run: |
           brew install create-dmg
 
+      - name: Verify macOS build exists
+        if: matrix.os == 'macos-latest'
+        run: |
+          if [ ! -d "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app" ]; then
+            echo "macOS build directory not found!"
+            exit 1
+          fi
+
       - name: Create DMG using create-dmg
         if: matrix.os == 'macos-latest'
         run: |
           APP_NAME=${{ env.APP_NAME }}
           APP_VERSION=${{ env.APP_VERSION }}
+          mkdir -p release
           create-dmg \
             --volname "$APP_NAME $APP_VERSION Installer" \
             --background "assets/images/install_background.png" \
