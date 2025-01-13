@@ -174,11 +174,11 @@ jobs:
           asset_name: release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.exe
           asset_content_type: application/octet-stream
 
-      - name: Check macOS build exists
+      - name: Verify macOS build exists
         if: matrix.os == 'macos-latest'
         run: |
-          if [ ! -f "release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.dmg" ]; then
-            echo "macOS build file not found!"
+          if [ ! -d "build/macos/Build/Products/Release/${{ needs.build.outputs.APP_NAME }}.app" ]; then
+            echo "macOS build directory not found!"
             exit 1
           fi
 
