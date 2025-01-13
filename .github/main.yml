@@ -1,4 +1,4 @@
-name: Flutter Build and Release
+name: Flutter PC Build and Release
 
 on:
   push:
@@ -13,47 +13,46 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
 
+    outputs:
+      app_name: ${{ steps.get_app_info.outputs.app_name || steps.get_app_info_win.outputs.app_name }}
+      app_version: ${{ steps.get_app_info.outputs.app_version || steps.get_app_info_win.outputs.app_version }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # macOS/Linux get app version and name
-
-      - name: Get app version and name for macOS/Linux
+      # 获取应用信息
+      - name: Get app version and name
+        id: get_app_info
         if: matrix.os != 'windows-latest'
         run: |
           APP_VERSION=$(grep -E '^version:' pubspec.yaml | awk '{print $2}' | tr -d "'")
           APP_NAME=$(grep -E '^name:' pubspec.yaml | awk '{print $2}')
+          echo "::set-output name=app_version::$APP_VERSION"
+          echo "::set-output name=app_name::$APP_NAME"
           echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
           echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
         shell: bash
 
-      - name: Print APP_NAME and APP_VERSION for macOS/Linux
-        if: matrix.os != 'windows-latest'
-        run: |
-          echo "The app name is ${{ env.APP_NAME }}"
-          echo "The app version is ${{ env.APP_VERSION }}"
-        shell: bash
-
-      # Windows get app version and name
-
-      - name: Get app version and name for Windows
+      - name: Get app version and name (Windows)
         if: matrix.os == 'windows-latest'
+        id: get_app_info_win
         run: |
-          $APP_NAME = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'name:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
           $APP_VERSION = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'version:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
+          $APP_NAME = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'name:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
+          echo "::set-output name=app_version::$APP_VERSION"
+          echo "::set-output name=app_name::$APP_NAME"
           echo "APP_VERSION=$APP_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
           echo "APP_NAME=$APP_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
 
-      - name: Print APP_NAME and APP_VERSION  for Windows
-        if: matrix.os == 'windows-latest'
+      - name: Print APP_NAME and APP_VERSION
         run: |
           echo "The app name is ${{ env.APP_NAME }}"
           echo "The app version is ${{ env.APP_VERSION }}"
-        shell: pwsh
 
       - name: Set up Flutter
+        id: flutter-env
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.4'
@@ -61,165 +60,196 @@ jobs:
       - name: Setup Flutter environment
         run: flutter pub get
 
-      - name: Determine branch type
-        id: determine-branch
-        run: echo "::set-output name=branch_type::$(if [[ $GITHUB_REF =~ ^refs/heads/release/.*$ ]]; then echo 'release'; else echo 'other'; fi)"
-        shell: bash
-
-      - name: Build and package app for macOS
+      # macOS 构建
+      - name: Build macOS app
         if: matrix.os == 'macos-latest'
         run: |
           flutter build macos --release
           mkdir -p release
 
+      - name: Cache Homebrew dependencies
+        id: cache-homebrew
+        uses: actions/cache@v2
+        with:
+          path: /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core
+          key: homebrew-dependencies-${{ runner.os }}-v1
+          restore-keys: |
+            homebrew-dependencies-${{ runner.os }}-
+
       - name: Install create-dmg via Homebrew
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install create-dmg
+        if: matrix.os == 'macos-latest' && steps.cache-homebrew.outputs.cache-hit != 'true'
+        run: brew install create-dmg
 
-      - name: Verify macOS build exists
-        if: matrix.os == 'macos-latest'
-        run: |
-          if [ ! -d "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app" ]; then
-            echo "macOS build directory not found!"
-            exit 1
-          fi
+      - name: Cache create-dmg
+        id: cache-create-dmg
+        uses: actions/cache@v2
+        with:
+          path: /usr/local/Caskroom/create-dmg
+          key: create-dmg-${{ runner.os }}-v1
+          restore-keys: |
+            create-dmg-${{ runner.os }}-
 
-      - name: Create DMG using create-dmg
+      - name: Create DMG for macOS
         if: matrix.os == 'macos-latest'
         run: |
-          APP_NAME=${{ env.APP_NAME }}
-          APP_VERSION=${{ env.APP_VERSION }}
-          mkdir -p release
           create-dmg \
-            --volname "$APP_NAME $APP_VERSION Installer" \
+            --volname "${{ env.APP_NAME }} ${{ env.APP_VERSION }} Installer" \
             --background "assets/images/install_background.png" \
             --window-pos 200 120 \
             --window-size 600 400 \
-            --icon "$APP_NAME.app" 200 190 \
+            --icon "${{ env.APP_NAME }}.app" 200 190 \
             --app-drop-link 400 185 \
-            "release/release-$APP_NAME-$APP_VERSION.dmg" \
-            "build/macos/Build/Products/Release/$APP_NAME.app"
+            "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg" \
+            "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app"
 
-      - name: List files in release directory
-        if: matrix.os == 'macos-latest'
-        run: ls -la ./release/
+      # Windows 构建
+      - name: Cache Chocolatey
+        id: chocolatey-cache
+        uses: actions/cache@v2
+        with:
+          path: C:\ProgramData\chocolatey
+          key: ${{ runner.os }}-chocolatey-v1
+          restore-keys: |
+            ${{ runner.os }}-chocolatey-
 
-      - name: Build and package app for Windows
-        if: matrix.os == 'windows-latest' && steps.determine-branch.outputs.branch_type == 'release'
+      - name: Install Chocolatey (if cache miss)
+        if: matrix.os == 'windows-latest' && steps.chocolatey-cache.outputs.cache-hit != 'true'
+        run: |
+          Write-Host "Installing Chocolatey..."
+          Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+          choco feature enable -n allowGlobalConfirmation
+
+      - name: Check Chocolatey installation
+        run: choco --version
+
+      - name: Cache Advanced Installer
+        id: advanced-installer-cache
+        uses: actions/cache@v2
+        with:
+          path: C:\Program Files (x86)\Caphyon\Advanced Installer 22.3
+          key: ${{ runner.os }}-advanced-installer-v1
+          restore-keys: |
+            ${{ runner.os }}-advanced-installer-
+
+      - name: Install Advanced Installer (if cache miss)
+        if: matrix.os == 'windows-latest' && steps.advanced-installer-cache.outputs.cache-hit != 'true'
+        run: |
+          Write-Host "Installing Advanced Installer..."
+          choco install advanced-installer --version=22.3 -y
+
+      - name: Check Advanced Installer installation
+        run: |
+          Write-Host "Checking Advanced Installer installation..."
+          & 'C:\Program Files (x86)\Caphyon\Advanced Installer 22.3\bin\x64\aiCmd.exe' /?
+
+      - name: Check aiCmd path
+        if: matrix.os == 'windows-latest'
+        run: |
+          Get-Command aiCmd.exe
+
+      - name: Build Windows app
+        if: matrix.os == 'windows-latest'
         run: |
           flutter build windows --release
           mkdir -p release
-          cp "build/windows/x64/runner/Release/${{ env.APP_NAME }}.exe" "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe"
-        shell: pwsh
+          cp "build/windows/x64/runner/Release/${{ env.APP_NAME }}.exe"
 
-      - name: Create GitHub Release
-        id: create_release
-        if: matrix.os == 'macos-latest'
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        with:
-          tag_name: 'v${{ env.APP_VERSION }}'
-          release_name: 'Release ${{ env.APP_NAME }} ${{ env.APP_VERSION }}'
-          body: 'Release of Flutter PC build'
-
-      - name: Upload artifact for macOS
-        if : matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v3
-        with:
-          name: macos-artifact-dmg
-          path: release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
-
-      - name: Upload artifact for Windows
-        if : matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v3
-        with:
-          name: windows-artifact-exe
-          path: release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
-
-      - name: Debug upload URL
+      - name: Create Installer using Advanced Installer
+        if: matrix.os == 'windows-latest'
         run: |
-          echo "Upload URL: ${{ steps.create_release.outputs.upload_url }}"
+          aiCmd.exe /build .\config.ai /projectPath="${GITHUB_WORKSPACE}" /outputPath="./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe"
 
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      APP_NAME: ${{ env.APP_NAME }}
-      APP_VERSION: ${{ env.APP_VERSION }}
+      # 上传构建产物
+      - name: Upload macOS artifact
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-artifact
+          path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
 
-  upload_assets:
+      - name: Upload Windows artifact
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-artifact
+          path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
+
+  release:
     needs: build
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-latest, windows-latest]
-
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Debug upload URL
-        run: |
-          echo "upload_url : ${{ needs.build.outputs.upload_url }}"
-          echo "APP_NAME : ${{ needs.build.outputs.APP_NAME }}"
-          echo "APP_VERSION : ${{ needs.build.outputs.APP_VERSION }}"
-          echo "release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.exe"
-          echo "release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.dmg"
-
-      - name: Download artifact for macOS
-        if: matrix.os == 'macos-latest'
+      # 下载构建产物
+      - name: Download macOS artifact
         uses: actions/download-artifact@v3
         with:
-          name: macos-artifact-dmg
-          path: ./release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.dmg
+          name: macos-artifact
+          path: ./release
 
-      - name: Download artifact for Windows
-        if : matrix.os == 'windows-latest'
+      - name: Download Windows artifact
         uses: actions/download-artifact@v3
         with:
-          name: windows-artifact-exe
-          path: ./release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.exe
+          name: windows-artifact
+          path: ./release
 
-      - name: List files
-        run: ls
-
-      - name: List files in release directory
-        run: ls -R release
-
-      - name: Check Windows build exists
-        if: matrix.os == 'windows-latest'
-        run: |
-          if [ ! -f "release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.exe" ]; then
-            echo "Windows build file not found!"
-            exit 1
-          fi
-
-      - name: Upload Windows build to GitHub Release
-        if: matrix.os == 'windows-latest'
-        uses: actions/upload-release-asset@v1
+      # 上传 release
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          # GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.build.outputs.app_version }}
         with:
-          upload_url: ${{ needs.build.outputs.upload_url }}
-          asset_path: ./release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.exe
-          asset_name: release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.exe
-          asset_content_type: application/octet-stream
+          tag_name: "v${{ steps.get_version_name.outputs.app_version }}"
+          name: Release ${{ needs.build.outputs.app_name }} ${{ needs.build.outputs.app_version }}
+          body: 'Flutter PC Build and Release'
+          draft: false
+          prerelease: false
+          files: |
+            release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.dmg
+            release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.exe
 
-      - name: Check macOS build exists
-        if: matrix.os == 'macos-latest'
+  release_and_merge:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/release/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # 确保所有历史记录都被获取，以便能够正确合并
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          tag: ${{ github.ref }}
+          commit: ${{ github.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          draft: false
+          prerelease: false
+          name: "Release ${{ github.ref }}"
+          body: |
+            New release for ${{ github.ref }}
+
+      - name: Merge to Main/Master
         run: |
-          if [ ! -f "release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.dmg" ]; then
-            echo "macOS build file not found!"
-            exit 1
-          fi
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          MAIN_BRANCH="main"  # 或者 "master" 根据你的默认分支名称
+          CURRENT_BRANCH=$(echo $GITHUB_REF | cut -d'/' -f3)
 
-      - name: Upload macOS build to GitHub Release
-        if: matrix.os == 'macos-latest'
-        uses: actions/upload-release-asset@v1
+          # 检查是否已经有最新的主分支
+          git fetch origin $MAIN_BRANCH
+          git checkout $MAIN_BRANCH
+          git pull origin $MAIN_BRANCH
+
+          # 合并当前分支到主分支
+          git merge --no-ff $CURRENT_BRANCH -m "Merge branch '$CURRENT_BRANCH' into $MAIN_BRANCH"
+
+          # 推送更新到远程仓库
+          git push origin $MAIN_BRANCH
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        with:
-          upload_url: ${{ needs.build.outputs.upload_url }}
-          asset_path: ./release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.dmg
-          asset_name: release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.dmg
-          asset_content_type: application/x-apple-diskimage
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

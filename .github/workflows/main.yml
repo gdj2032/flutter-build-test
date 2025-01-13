@@ -67,27 +67,9 @@ jobs:
           flutter build macos --release
           mkdir -p release
 
-      - name: Cache Homebrew dependencies
-        id: cache-homebrew
-        uses: actions/cache@v2
-        with:
-          path: /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core
-          key: homebrew-dependencies-${{ runner.os }}-v1
-          restore-keys: |
-            homebrew-dependencies-${{ runner.os }}-
-
       - name: Install create-dmg via Homebrew
-        if: matrix.os == 'macos-latest' && steps.cache-homebrew.outputs.cache-hit != 'true'
+        if: matrix.os == 'macos-latest'
         run: brew install create-dmg
-
-      - name: Cache create-dmg
-        id: cache-create-dmg
-        uses: actions/cache@v2
-        with:
-          path: /usr/local/Caskroom/create-dmg
-          key: create-dmg-${{ runner.os }}-v1
-          restore-keys: |
-            create-dmg-${{ runner.os }}-
 
       - name: Create DMG for macOS
         if: matrix.os == 'macos-latest'
@@ -103,43 +85,20 @@ jobs:
             "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app"
 
       # Windows 构建
-      - name: Cache Chocolatey
-        id: chocolatey-cache
-        uses: actions/cache@v2
-        with:
-          path: C:\ProgramData\chocolatey
-          key: ${{ runner.os }}-chocolatey-v1
-          restore-keys: |
-            ${{ runner.os }}-chocolatey-
-
-      - name: Install Chocolatey (if cache miss)
-        if: matrix.os == 'windows-latest' && steps.chocolatey-cache.outputs.cache-hit != 'true'
+      - name: Install Chocolatey
+        if: matrix.os == 'windows-latest'
         run: |
-          Write-Host "Installing Chocolatey..."
           Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
           choco feature enable -n allowGlobalConfirmation
 
-      - name: Check Chocolatey installation
-        run: choco --version
-
-      - name: Cache Advanced Installer
-        id: advanced-installer-cache
-        uses: actions/cache@v2
-        with:
-          path: C:\Program Files (x86)\Caphyon\Advanced Installer 22.3
-          key: ${{ runner.os }}-advanced-installer-v1
-          restore-keys: |
-            ${{ runner.os }}-advanced-installer-
-
-      - name: Install Advanced Installer (if cache miss)
-        if: matrix.os == 'windows-latest' && steps.advanced-installer-cache.outputs.cache-hit != 'true'
+      - name: Install Advanced Installer
+        if: matrix.os == 'windows-latest'
         run: |
-          Write-Host "Installing Advanced Installer..."
           choco install advanced-installer --version=22.3 -y
 
       - name: Check Advanced Installer installation
+        if: matrix.os == 'windows-latest'
         run: |
-          Write-Host "Checking Advanced Installer installation..."
           & 'C:\Program Files (x86)\Caphyon\Advanced Installer 22.3\bin\x64\aiCmd.exe' /?
 
       - name: Check aiCmd path
