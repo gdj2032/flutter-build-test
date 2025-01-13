@@ -67,7 +67,7 @@ jobs:
           flutter build macos --release
           mkdir -p release
 
-      - name: Install create-dmg via Homebrew
+      - name: Install create-dmg
         if: matrix.os == 'macos-latest'
         run: brew install create-dmg
 
@@ -95,11 +95,6 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           choco install advanced-installer --version=22.3 -y
-
-      - name: Check Advanced Installer installation
-        if: matrix.os == 'windows-latest'
-        run: |
-          & 'C:\Program Files (x86)\Caphyon\Advanced Installer 22.3\bin\x64\aiCmd.exe' /?
 
       - name: Check aiCmd path
         if: matrix.os == 'windows-latest'
@@ -170,7 +165,7 @@ jobs:
             release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.dmg
             release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.exe
 
-  release_and_merge:
+  merge:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/release/')
 
@@ -179,19 +174,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0  # 确保所有历史记录都被获取，以便能够正确合并
-
-      - name: Create Release
-        uses: ncipollo/release-action@v1
-        with:
-          allowUpdates: true
-          tag: ${{ github.ref }}
-          commit: ${{ github.sha }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          draft: false
-          prerelease: false
-          name: "Release ${{ github.ref }}"
-          body: |
-            New release for ${{ github.ref }}
 
       - name: Merge to Main/Master
         run: |
