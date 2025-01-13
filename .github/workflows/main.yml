@@ -124,6 +124,20 @@ jobs:
           release_name: 'Release ${{ env.APP_NAME }} ${{ env.APP_VERSION }}'
           body: 'Release of Flutter PC build'
 
+      - name: Upload artifact for macOS
+        if : matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v2
+        with:
+          name: macos-artifact-dmg
+          path: release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
+
+      - name: Upload artifact for Windows
+        if : matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows-artifact-exe
+          path: release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
+
       - name: Debug upload URL
         run: |
           echo "Upload URL: ${{ steps.create_release.outputs.upload_url }}"
@@ -152,6 +166,20 @@ jobs:
           echo "release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.exe"
           echo "release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.dmg"
 
+      - name: Download artifact for macOS
+        if: matrix.os == 'macos-latest'
+        uses: actions/download-artifact@v2
+        with:
+          name: macos-artifact-dmg
+          path: release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.dmg
+
+      - name: Download artifact for Windows
+        if : matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows-artifact-exe
+          path: release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.exe
+
       - name: Print working directory
         run: pwd
 
@@ -174,10 +202,10 @@ jobs:
           asset_name: release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.exe
           asset_content_type: application/octet-stream
 
-      - name: Verify macOS build exists
+      - name: Check macOS build exists
         if: matrix.os == 'macos-latest'
         run: |
-          if [ ! -d "build/macos/Build/Products/Release/${{ needs.build.outputs.APP_NAME }}.app" ]; then
+          if [ ! -d "release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.dmg" ]; then
             echo "macOS build directory not found!"
             exit 1
           fi
