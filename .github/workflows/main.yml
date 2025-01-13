@@ -133,8 +133,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           VERSION: ${{ needs.build.outputs.app_version }}
         with:
+          tag_name: "v${{ steps.get_version_name.outputs.app_version }}"
           name: Release ${{ needs.build.outputs.app_name }} ${{ needs.build.outputs.app_version }}
-          body: 'Release of Flutter PC build'
+          body: 'Flutter PC Build and Release'
           draft: false
           prerelease: false
           files: |
