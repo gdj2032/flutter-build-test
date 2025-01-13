@@ -94,9 +94,15 @@ jobs:
       - name: Install Advanced Installer
         if: matrix.os == 'windows-latest'
         run: |
-          winget install AdvancedInstaller
+          Invoke-WebRequest -Uri https://download.advancedinstaller.com/AdvancedInstaller.exe -OutFile AdvancedInstaller.exe
+          .\AdvancedInstaller.exe /S
 
-      - name: Create installer
+      - name: Check Advanced Installer installation
+        if: matrix.os == 'windows-latest'
+        run: |
+          advanced_installer --version
+
+      - name: Create exe for Windows
         if: matrix.os == 'windows-latest'
         run: |
           advanced_installer --config=config.ai --output=release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
