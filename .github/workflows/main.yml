@@ -94,11 +94,26 @@ jobs:
       - name: Install Advanced Installer
         if: matrix.os == 'windows-latest'
         run: |
+          # Install Advanced Installer
           choco install advanced-installer --version=22.3 -y
-          $aiCmdPath = (Get-Command aiCmd.exe).Definition
-          if (!$aiCmdPath) {
-            echo "aiCmd.exe not found. Please check the installation."
+
+          # Verify installation and add to PATH if necessary
+          $advancedInstallerPath = "C:\Program Files (x86)\Caphyon\Advanced Installer 22.3\bin\x64"
+          if (-not (Test-Path $advancedInstallerPath)) {
+            Write-Host "Error: Advanced Installer not found at expected path: $advancedInstallerPath"
             exit 1
+          }
+
+          # Add Advanced Installer bin path to the current session's PATH
+          $env:Path += ";$advancedInstallerPath"
+
+          # Verify aiCmd.exe is available
+          $aiCmdPath = Get-Command aiCmd.exe -ErrorAction SilentlyContinue
+          if (-not $aiCmdPath) {
+            Write-Host "Error: aiCmd.exe not found in PATH. Please check the installation."
+            exit 1
+          } else {
+            Write-Host "aiCmd.exe found at $($aiCmdPath.Definition)"
           }
 
       - name: Build Windows app
@@ -106,12 +121,13 @@ jobs:
         run: |
           flutter build windows --release
           mkdir -p release
-          cp "build/windows/x64/runner/Release/${{ env.APP_NAME }}.exe"
+          cp "build/windows/x64/Release/${{ env.APP_NAME }}.exe" ./release/
 
       - name: Create Installer using Advanced Installer
         if: matrix.os == 'windows-latest'
         run: |
-          $aiCmdPath = (Get-Command aiCmd.exe).Definition
+          # Directly use the full path to aiCmd.exe or rely on PATH
+          $aiCmdPath = (Get-Command aiCmd.exe -ErrorAction Stop).Definition
           & $aiCmdPath /build .\config.ai /projectPath="${GITHUB_WORKSPACE}" /outputPath="./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe"
 
       # 上传构建产物
