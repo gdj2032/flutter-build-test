@@ -86,28 +86,20 @@ jobs:
             "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app"
 
       # Windows 构建
-      - name: Install Chocolatey
-        if: matrix.os == 'windows-latest'
+      - name: Download Inno Setup
         run: |
-          Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-          choco feature enable -n allowGlobalConfirmation
-
-      - name: Install Inno Setup
-        if: matrix.os == 'windows-latest'
-        run: |
-          choco install innosetup --version=6.2.0 --allow-downgrade
+          Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/ispack.exe" -OutFile "ispack.exe"
+          Start-Process -FilePath ".\ispack.exe" -ArgumentList "/SP-", "/VERYSILENT", "/NORESTART", "/DIR=C:\Program Files (x86)\Inno Setup 6" -Wait
+          Remove-Item .\ispack.exe
 
       - name: Build Windows app
         if: matrix.os == 'windows-latest'
         run: |
           flutter build windows --release
 
-      - name: Create Installer using Inno Setup
-        if: matrix.os == 'windows-latest'
+      - name: Compile Inno Setup script
         run: |
-          # Directly use the full path to iscc.exe or rely on PATH
-          $innosetupPath = "C:\Program Files (x86)\Inno Setup 6\iscc.exe"
-          & $innosetupPath /Q .\setup.iss /OUTPUTDIR="./release" /OUTPUTFILE="release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /Q /O+ "./release" /DMyAppVersion=${{ env.APP_VERSION }} /DMyAppName=${{ env.APP_NAME }} .\setup.iss
 
       # 上传构建产物
       - name: Upload macOS artifact
