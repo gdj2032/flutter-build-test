@@ -91,11 +91,15 @@ jobs:
           mkdir -p release
           cp "build/windows/x64/runner/Release/${{ env.APP_NAME }}.exe"
 
+      - name: Install Chocolatey
+        if: matrix.os == 'windows-latest'
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
       - name: Install Advanced Installer
         if: matrix.os == 'windows-latest'
         run: |
-          Invoke-WebRequest -Uri https://download.advancedinstaller.com/AdvancedInstaller.exe -OutFile AdvancedInstaller.exe
-          .\AdvancedInstaller.exe /S
+          choco install advanced-installer
 
       - name: Check Advanced Installer installation
         if: matrix.os == 'windows-latest'
