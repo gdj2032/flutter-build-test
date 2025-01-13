@@ -99,7 +99,7 @@ jobs:
 
       - name: Compile Inno Setup script
         run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /Q /O+ "./release" /DMyAppVersion=${{ env.APP_VERSION }} /DMyAppName=${{ env.APP_NAME }} .\setup.iss
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /Q "/DMyAppVersion=${{ env.APP_VERSION }}" "/DMyAppName=${{ env.APP_NAME }}" .\setup.iss
 
       # 上传构建产物
       - name: Upload macOS artifact
