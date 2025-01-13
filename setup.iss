@@ -7,10 +7,10 @@ AppVersion={#MyAppVersion}
 DefaultDirName={pf}\{#MyAppName}
 
 [Files]
-Source: "build\windows\x64\Release\{#MyAppName}.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\windows\x64\Release\{#MyAppName}.exe"; DestDir: "{app}";
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppName}.exe"
 
 [Run]
-Filename: "{app}\{#MyAppName}.exe"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppName}.exe"; Description: "{cm:LaunchProgram,{#MyAppName}}";
