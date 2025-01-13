@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AdvancedInstaller>
+  <Product>
+    <Name>${PROJECT_NAME}</Name>
+    <Version>${PROJECT_VERSION}</Version>
+    <Description>My Flutter App</Description>
+    <Icon>icon.ico</Icon>
+  </Product>
+  <Files>
+    <File>
+      <Source>build\windows\x64\runner\Release\${PROJECT_NAME}.exe</Source>
+      <Destination>Program Files\${PROJECT_NAME}</Destination>
+    </File>
+  </Files>
+  <Shortcuts>
+    <Shortcut>
+      <Name>${PROJECT_NAME}</Name>
+      <Description>My Flutter App</Description>
+      <Icon>icon.ico</Icon>
+      <Target>Program Files\${PROJECT_NAME}\${PROJECT_NAME}.exe</Target>
+    </Shortcut>
+  </Shortcuts>
+</AdvancedInstaller>

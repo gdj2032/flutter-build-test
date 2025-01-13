@@ -89,7 +89,17 @@ jobs:
         run: |
           flutter build windows --release
           mkdir -p release
-          cp "build/windows/x64/runner/Release/${{ env.APP_NAME }}.exe" "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe"
+          cp "build/windows/x64/runner/Release/${{ env.APP_NAME }}.exe"
+
+      - name: Install Advanced Installer
+        if: matrix.os == 'windows-latest'
+        run: |
+          winget install AdvancedInstaller
+
+      - name: Create installer
+        if: matrix.os == 'windows-latest'
+        run: |
+          advanced_installer --config=config.ai --output=release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
 
       # 上传构建产物
       - name: Upload macOS artifact
