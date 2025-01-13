@@ -97,8 +97,13 @@ jobs:
           # Install Advanced Installer
           choco install advanced-installer --version=22.3 -y
 
-          # Verify installation and add to PATH if necessary
+          # Refresh environment variables to pick up changes made by the installer
+          refreshenv
+
+          # Define the expected path for aiCmd.exe
           $advancedInstallerPath = "C:\Program Files (x86)\Caphyon\Advanced Installer 22.3\bin\x64"
+
+          # Verify installation path exists
           if (-not (Test-Path $advancedInstallerPath)) {
             Write-Host "Error: Advanced Installer not found at expected path: $advancedInstallerPath"
             exit 1
@@ -107,7 +112,7 @@ jobs:
           # Add Advanced Installer bin path to the current session's PATH
           $env:Path += ";$advancedInstallerPath"
 
-          # Verify aiCmd.exe is available
+          # Verify aiCmd.exe is available in the updated PATH
           $aiCmdPath = Get-Command aiCmd.exe -ErrorAction SilentlyContinue
           if (-not $aiCmdPath) {
             Write-Host "Error: aiCmd.exe not found in PATH. Please check the installation."
