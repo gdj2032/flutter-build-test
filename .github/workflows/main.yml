@@ -107,7 +107,7 @@ jobs:
         run: |
           # Directly use the full path to iscc.exe or rely on PATH
           $innosetupPath = "C:\Program Files (x86)\Inno Setup 6\iscc.exe"
-          & $innosetupPath /SILENT /CONFIGFILE=.\setup.iss /OUTPUTDIR="./release" /OUTPUTFILE="release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe"
+          & $innosetupPath /Q /CONFIGFILE=.\setup.iss /OUTPUTDIR="./release" /OUTPUTFILE="release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe"
 
       # 上传构建产物
       - name: Upload macOS artifact
