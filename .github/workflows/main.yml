@@ -101,6 +101,12 @@ jobs:
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /Q "/DMyAppVersion=${{ env.APP_VERSION }}" "/DMyAppName=${{ env.APP_NAME }}" .\setup.iss
 
+      - name: print ls
+        run: ls
+
+      - name: print ls for release
+        run: ls release
+
       # 上传构建产物
       - name: Upload macOS artifact
         if: matrix.os == 'macos-latest'
