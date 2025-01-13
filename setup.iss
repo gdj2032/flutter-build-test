@@ -7,7 +7,7 @@ AppVersion={#MyAppVersion}
 DefaultDirName={pf}\{#MyAppName}
 
 [Files]
-Source: "build\windows\x64\Release\{#MyAppName}.exe"; DestDir: "{app}";
+Source: "{app}\build\windows\x64\Release\{#MyAppName}.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppName}.exe"
