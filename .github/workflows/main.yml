@@ -120,14 +120,14 @@ jobs:
           restore-keys: |
             advanced-installer-${{ runner.os }}-
 
-      - name: Install Advanced Installer
+      - name: Install Advanced Installer (if cache miss)
         if: matrix.os == 'windows-latest' && steps.advanced-installer-cache.outputs.cache-hit != 'true'
-        run: choco install advanced-installer
+        run: choco install advanced-installer --version=22.3 -y
 
-      - name: Check advanced_installer path
+      - name: Check aiCmd path
         if: matrix.os == 'windows-latest'
         run: |
-          Get-Command advanced_installer
+          Get-Command aiCmd.exe
 
       - name: Build Windows app
         if: matrix.os == 'windows-latest'
@@ -136,10 +136,10 @@ jobs:
           mkdir -p release
           cp "build/windows/x64/runner/Release/${{ env.APP_NAME }}.exe"
 
-      - name: Create exe for Windows
+      - name: Create Installer using Advanced Installer
         if: matrix.os == 'windows-latest'
         run: |
-          advanced_installer --config=config.ai --output=release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
+          aiCmd.exe /build .\config.ai /projectPath="${GITHUB_WORKSPACE}" /outputPath="./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe"
 
       # 上传构建产物
       - name: Upload macOS artifact
