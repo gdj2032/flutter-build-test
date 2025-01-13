@@ -131,7 +131,7 @@ jobs:
         id: create_release
         uses: ncipollo/release-action@v1
         env:
-          # GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN2 }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN2 }}
           VERSION: ${{ needs.build.outputs.app_version }}
         with:
           tag: v${{ needs.build.outputs.app_version }}
