@@ -95,13 +95,6 @@ jobs:
             "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app"
 
       # Windows 构建
-      - name: Build Windows app
-        if: matrix.os == 'windows-latest'
-        run: |
-          flutter build windows --release
-          mkdir -p release
-          cp "build/windows/x64/runner/Release/${{ env.APP_NAME }}.exe"
-
       - name: Install Chocolatey
         if: matrix.os == 'windows-latest'
         id: chocolatey-cache
@@ -132,8 +125,16 @@ jobs:
         run: choco install advanced-installer
 
       - name: Check advanced_installer path
+        if: matrix.os == 'windows-latest'
         run: |
           Get-Command advanced_installer
+
+      - name: Build Windows app
+        if: matrix.os == 'windows-latest'
+        run: |
+          flutter build windows --release
+          mkdir -p release
+          cp "build/windows/x64/runner/Release/${{ env.APP_NAME }}.exe"
 
       - name: Create exe for Windows
         if: matrix.os == 'windows-latest'
