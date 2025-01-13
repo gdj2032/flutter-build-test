@@ -126,29 +126,17 @@ jobs:
           name: windows-artifact
           path: ./release
 
-      # 创建 release
-      - name: Create Release
-        id: create_release
-        uses: ncipollo/release-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN2 }}
-          VERSION: ${{ needs.build.outputs.app_version }}
-        with:
-          tag: v${{ needs.build.outputs.app_version }}
-          name: Release ${{ needs.build.outputs.app_name }} ${{ needs.build.outputs.app_version }}
-          body: 'Release of Flutter PC build'
-          artifacts: 'release/*'
-          draft: false
-          prerelease: false
-          allowUpdates: true
-
       # 上传 release
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN2 }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           VERSION: ${{ needs.build.outputs.app_version }}
         with:
+          name: Release ${{ needs.build.outputs.app_name }} ${{ needs.build.outputs.app_version }}
+          body: 'Release of Flutter PC build'
+          draft: false
+          prerelease: false
           files: |
             release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.dmg
             release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.exe
