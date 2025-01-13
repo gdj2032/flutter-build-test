@@ -52,6 +52,7 @@ jobs:
           echo "The app version is ${{ env.APP_VERSION }}"
 
       - name: Set up Flutter
+        id: flutter-env
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.4'
@@ -68,6 +69,16 @@ jobs:
 
       - name: Install create-dmg
         if: matrix.os == 'macos-latest'
+        id: create-dmg-cache
+        uses: actions/cache@v2
+        with:
+          path: /usr/local/bin/create-dmg
+          key: create-dmg-${{ runner.os }}-v1
+          restore-keys: |
+            create-dmg-${{ runner.os }}-
+
+      - name: Install create-dmg
+        if: matrix.os == 'macos-latest' && steps.create-dmg-cache.outputs.cache-hit != 'true'
         run: brew install create-dmg
 
       - name: Create DMG for macOS
@@ -93,18 +104,36 @@ jobs:
 
       - name: Install Chocolatey
         if: matrix.os == 'windows-latest'
+        id: chocolatey-cache
+        uses: actions/cache@v2
+        with:
+          path: C:\ProgramData\chocolatey
+          key: chocolatey-${{ runner.os }}-v1
+          restore-keys: |
+            chocolatey-${{ runner.os }}-
+
+      - name: Install Chocolatey
+        if: matrix.os == 'windows-latest' && steps.chocolatey-cache.outputs.cache-hit != 'true'
         run: |
           Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
       - name: Install Advanced Installer
         if: matrix.os == 'windows-latest'
-        run: |
-          choco install advanced-installer
+        id: advanced-installer-cache
+        uses: actions/cache@v2
+        with:
+          path: C:\Program Files (x86)\Caphyon\Advanced Installer 22.3
+          key: advanced-installer-${{ runner.os }}-v1
+          restore-keys: |
+            advanced-installer-${{ runner.os }}-
 
-      - name: Check Advanced Installer installation
-        if: matrix.os == 'windows-latest'
+      - name: Install Advanced Installer
+        if: matrix.os == 'windows-latest' && steps.advanced-installer-cache.outputs.cache-hit != 'true'
+        run: choco install advanced-installer
+
+      - name: Check advanced_installer path
         run: |
-          advanced_installer --version
+          Get-Command advanced_installer
 
       - name: Create exe for Windows
         if: matrix.os == 'windows-latest'
