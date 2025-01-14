@@ -29,6 +29,6 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>CFBundleSignature</key>
-	<string>com.flutter.build.test</string>
+	<string>ABCD</string>
 </dict>
 </plist>
