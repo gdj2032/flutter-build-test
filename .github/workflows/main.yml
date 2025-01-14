@@ -67,14 +67,32 @@ jobs:
           flutter build macos --release
           mkdir -p release
 
-      - name: Install create-dmg
-        if: matrix.os == 'macos-latest'
+      - name: Cache Homebrew dependencies
+        id: cache-homebrew
+        uses: actions/cache@v2
+        with:
+          path: /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core
+          key: homebrew-dependencies-${{ runner.os }}-v1
+          restore-keys: |
+            homebrew-dependencies-${{ runner.os }}-
+
+      - name: Install create-dmg via Homebrew
+        if: matrix.os == 'macos-latest' && steps.cache-homebrew.outputs.cache-hit != 'true'
         run: brew install create-dmg
+
+      - name: Cache create-dmg
+        id: cache-create-dmg
+        uses: actions/cache@v2
+        with:
+          path: /usr/local/Caskroom/create-dmg
+          key: create-dmg-${{ runner.os }}-v1
+          restore-keys: |
+            create-dmg-${{ runner.os }}-
 
       - name: Create DMG for macOS
         if: matrix.os == 'macos-latest'
         run: |
-          codesign -s "flutter_build_test" --deep --force --verbose --sign "flutter_build_test" build/macos/Build/Products/Release/${{ env.APP_NAME }}.app
+          codesign -s ./flutter_build_test --deep --force --verbose --sign ./flutter_build_test build/macos/Build/Products/Release/${{ env.APP_NAME }}.app
 
           create-dmg \
             --volname "${{ env.APP_NAME }} ${{ env.APP_VERSION }} Installer" \
