@@ -163,7 +163,7 @@ jobs:
   merge:
     needs: release
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/heads/release/')
+    if: startsWith(github.ref, 'refs/heads/release/*')
 
     steps:
       - name: Checkout code
