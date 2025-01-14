@@ -12,7 +12,7 @@ AppVersion={#MyAppVersion}
 DefaultDirName={pf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 OutputDir={#OutputDir}
-OutputBaseFilename={release-{#MyAppName}-{#MyAppVersion}}
+OutputBaseFilename=release-{#MyAppName}-{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
 
