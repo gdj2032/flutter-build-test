@@ -17,6 +17,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+build:
   signing:
     certificate: flutter_build_test.crt
     private_key: flutter_build_test.key
