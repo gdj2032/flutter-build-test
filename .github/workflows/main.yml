@@ -86,6 +86,7 @@ jobs:
 
       # Windows 构建
       - name: Download Inno Setup
+        if: matrix.os == 'windows-latest'
         run: |
           Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/ispack.exe" -OutFile "ispack.exe"
           Start-Process -FilePath ".\ispack.exe" -ArgumentList "/SP-", "/VERYSILENT", "/NORESTART", "/DIR=C:\Program Files (x86)\Inno Setup 6" -Wait
@@ -97,6 +98,7 @@ jobs:
           flutter build windows --release
 
       - name: Compile Inno Setup script
+        if: matrix.os == 'windows-latest'
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /Q "/DMyAppVersion=${{ env.APP_VERSION }}" "/DMyAppName=${{ env.APP_NAME }}" .\setup.iss
 
