@@ -11,8 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # os: [macos-latest, windows-latest]
-        os: [windows-latest]
+        os: [macos-latest, windows-latest]
 
     outputs:
       app_name: ${{ steps.get_app_info.outputs.app_name || steps.get_app_info_win.outputs.app_name }}
