@@ -91,18 +91,9 @@ jobs:
           flutter build macos --release
           mkdir -p release
 
-      - name: Add certificate to keychain
-        if: matrix.os == 'macos-latest'
-        run: |
-          security add-certificates -k /Library/Keychains/System.keychain flutter_build_test.crt
-          security set-keychain-partition -S mac_store -s /Library/Keychains/System.keychain
-          security set-keychain-settings -k /Library/Keychains/System.keychain -t 3600
-
       - name: Create DMG for macOS
         if: matrix.os == 'macos-latest'
         run: |
-          codesign -s ./flutter_build_test --deep --force --verbose --sign ./flutter_build_test build/macos/Build/Products/Release/${{ env.APP_NAME }}.app
-
           create-dmg \
             --volname "${{ env.APP_NAME }} ${{ env.APP_VERSION }} Installer" \
             --background "assets/images/install_background.png" \
@@ -113,6 +104,11 @@ jobs:
             "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg" \
             "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app"
 
+      - name: Codesign macOS dmg
+        if: matrix.os == 'macos-latest'
+        run: |
+          codesign --sign  ${{ secrets.MACOS_DEVELOPER_ID }} --verbose --timestamp --options runtime --entitlements "$PSScriptRoot/entitlements.plist" "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg"
+
       # Windows 构建
       - name: Download Inno Setup
         if: matrix.os == 'windows-latest'
@@ -121,27 +117,27 @@ jobs:
           Start-Process -FilePath ".\ispack.exe" -ArgumentList "/SP-", "/VERYSILENT", "/NORESTART", "/DIR=C:\Program Files (x86)\Inno Setup 6" -Wait
           Remove-Item .\ispack.exe
 
+      # - name: Install Chocolatey
+      #   if: matrix.os == 'windows-latest'
+      #   run: |
+      #     Write-Host "Installing Chocolatey..."
+      #     Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+      #     choco feature enable -n allowGlobalConfirmation
+
+      # - name: Install Windows SDK
+      #   if: matrix.os == 'windows-latest'
+      #   run: |
+      #     choco install windows-sdk
+
       - name: Build Windows app
         if: matrix.os == 'windows-latest'
         run: |
           flutter build windows --release
 
-      - name: Install Chocolatey
-        if: matrix.os == 'windows-latest'
-        run: |
-          Write-Host "Installing Chocolatey..."
-          Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-          choco feature enable -n allowGlobalConfirmation
-
-      - name: Install Windows SDK
-        if: matrix.os == 'windows-latest'
-        run: |
-          choco install windows-sdk
-
-      - name: Sign application
-        if: matrix.os == 'windows-latest'
-        run: |
-          signtool sign /f "flutter_build_test.p12" /p "flutter_build_test" /d "描述123" /t http://timestamp.digicert.com "build\windows\x64\runner\Release\${{ env.APP_NAME }}.exe"
+      # - name: Sign application
+      #   if: matrix.os == 'windows-latest'
+      #   run: |
+      #     signtool sign /f "flutter_build_test.p12" /p "flutter_build_test" /d "描述123" /t http://timestamp.digicert.com "build\windows\x64\runner\Release\${{ env.APP_NAME }}.exe"
 
       - name: Compile Inno Setup script
         if: matrix.os == 'windows-latest'
