@@ -147,8 +147,8 @@ jobs:
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
         env:
-          # GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.build.outputs.app_version }}
         with:
           tag_name: "v${{ steps.get_version_name.outputs.app_version }}"
