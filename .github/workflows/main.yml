@@ -61,12 +61,6 @@ jobs:
         run: flutter pub get
 
       # macOS 构建
-      - name: Build macOS app
-        if: matrix.os == 'macos-latest'
-        run: |
-          flutter build macos --release
-          mkdir -p release
-
       - name: Cache Homebrew dependencies
         id: cache-homebrew
         uses: actions/cache@v2
@@ -88,6 +82,18 @@ jobs:
           key: create-dmg-${{ runner.os }}-v1
           restore-keys: |
             create-dmg-${{ runner.os }}-
+
+      - name: Build macOS app
+        if: matrix.os == 'macos-latest'
+        run: |
+          flutter build macos --release
+          mkdir -p release
+
+      - name: Add certificate to keychain
+        run: |
+          security add-certificates -k /Library/Keychains/System.keychain flutter_build_test.crt
+          security set-keychain-partition -S mac_store -s /Library/Keychains/System.keychain
+          security set-keychain-settings -k /Library/Keychains/System.keychain -t 3600
 
       - name: Create DMG for macOS
         if: matrix.os == 'macos-latest'
