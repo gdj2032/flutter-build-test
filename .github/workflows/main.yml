@@ -71,9 +71,16 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: brew install create-dmg
 
+      - name: Install Xcode Command Line Tools
+        if: matrix.os == 'macos-latest'
+        run: |
+          xcode-select --install
+
       - name: Create DMG for macOS
         if: matrix.os == 'macos-latest'
         run: |
+          codesign -s "flutter_build_test" --deep --force --verbose --sign "flutter_build_test" build/macos/Build/Products/Release/${{ env.APP_NAME }}.app
+
           create-dmg \
             --volname "${{ env.APP_NAME }} ${{ env.APP_VERSION }} Installer" \
             --background "assets/images/install_background.png" \
@@ -96,6 +103,23 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           flutter build windows --release
+
+      - name: Install Chocolatey
+        if: matrix.os == 'windows-latest'
+        run: |
+          Write-Host "Installing Chocolatey..."
+          Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+          choco feature enable -n allowGlobalConfirmation
+
+      - name: Install Windows SDK
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install windows-sdk
+
+      - name: Sign application
+        if: matrix.os == 'windows-latest'
+        run: |
+          signtool sign /f "flutter_build_test.p12" /p "flutter_build_test" /d "描述123" /t http://timestamp.digicert.com "build\windows\x64\runner\Release\${{ env.APP_NAME }}.exe"
 
       - name: Compile Inno Setup script
         if: matrix.os == 'windows-latest'
