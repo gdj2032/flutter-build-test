@@ -84,30 +84,33 @@ jobs:
             "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg" \
             "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app"
 
-      - name: Import macOS certificate
+      - name: Generate self-signed certificate for macOS
         if: matrix.os == 'macos-latest'
         run: |
-          echo ${{ secrets.MACOS_CERTIFICATE }}
-          echo ${{ secrets.MACOS_CERTIFICATE_PWD }}
-          echo "${{ secrets.MACOS_CERTIFICATE }}" | base64 --decode > certificate.p12
+          echo "Generating self-signed certificate..."
           security create-keychain -p "" build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p "" build.keychain
-          security import certificate.p12 -k build.keychain -P "${{ secrets.MACOS_CERTIFICATE_PWD }}" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
-          rm certificate.p12
 
-      - name: Codesign macOS dmg
+          # 生成自签名证书
+          CERT_NAME="SelfSignedCert"
+          security create-certificate -c "$CERT_NAME" -p codesigning -k build.keychain
+
+          echo "Certificate generated successfully."
+
+      - name: Codesign macOS dmg with self-signed certificate
         if: matrix.os == 'macos-latest'
         run: |
-          # 确保钥匙串已解锁
+          echo "Unlocking keychain..."
           security unlock-keychain -p "" build.keychain
 
-          # 列出钥匙串中的证书以进行调试
+          echo "Listing available identities..."
           security find-identity -v -p codesigning
 
-          # 签名 DMG 文件
-          codesign --deep --force --verify --verbose --sign "${{ secrets.MACOS_DEVELOPER_ID }}" --keychain build.keychain --options runtime --entitlements "$PSScriptRoot/entitlements.plist" "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg"
+          echo "Signing DMG file with self-signed certificate..."
+          CERT_NAME="SelfSignedCert"
+          codesign --deep --force --verify --verbose --sign "$CERT_NAME" --keychain build.keychain --options runtime --entitlements "$PSScriptRoot/entitlements.plist" "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg"
+          echo "Signing completed."
 
       # Windows 构建
       - name: Download Inno Setup
@@ -127,7 +130,7 @@ jobs:
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /Q "/DMyAppVersion=${{ env.APP_VERSION }}" "/DMyAppName=${{ env.APP_NAME }}" .\setup.iss
 
-      - name: Generate self-signed certificate
+      - name: Generate self-signed certificate for Windows
         if: matrix.os == 'windows-latest'
         run: |
           $certificatePath = "$env:RUNNER_TEMP\certificate.pfx"
