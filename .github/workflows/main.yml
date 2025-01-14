@@ -62,6 +62,7 @@ jobs:
 
       # macOS 构建
       - name: Cache Homebrew dependencies
+        if: matrix.os == 'macos-latest'
         id: cache-homebrew
         uses: actions/cache@v2
         with:
@@ -75,6 +76,7 @@ jobs:
         run: brew install create-dmg
 
       - name: Cache create-dmg
+        if: matrix.os == 'macos-latest'
         id: cache-create-dmg
         uses: actions/cache@v2
         with:
@@ -90,6 +92,7 @@ jobs:
           mkdir -p release
 
       - name: Add certificate to keychain
+        if: matrix.os == 'macos-latest'
         run: |
           security add-certificates -k /Library/Keychains/System.keychain flutter_build_test.crt
           security set-keychain-partition -S mac_store -s /Library/Keychains/System.keychain
