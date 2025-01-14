@@ -95,8 +95,8 @@ jobs:
           # 生成自签名证书
           CERT_NAME="SelfSignedCert"
           openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=$CERT_NAME"
-          openssl pkcs12 -export -out certificate.p12 -inkey key.pem -in cert.pem -passout pass:
-          security import certificate.p12 -k build.keychain -P "" -T /usr/bin/codesign
+          openssl pkcs12 -export -out certificate.p12 -inkey key.pem -in cert.pem -passout pass:password
+          security import certificate.p12 -k build.keychain -P "password" -T /usr/bin/codesign
           rm key.pem cert.pem certificate.p12
 
           echo "Certificate generated and imported successfully."
