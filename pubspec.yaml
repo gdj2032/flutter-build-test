@@ -23,9 +23,9 @@ msix_config:
   msix_version: 1.0.0.0
   
   certificate:
-    generate: true
-    password: password123
-    subject: CN=flutter_build_test, O=flutter_build_test_company, L=Beijing, C=CN
+    generate: false
+    path: flutter_build_test.p12
+    password: flutter_build_test
   
   icons:
     background_color: white
