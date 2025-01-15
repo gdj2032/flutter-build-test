@@ -17,29 +17,23 @@ dev_dependencies:
   msix: ^3.16.8
 
 msix_config:
-  # 基本配置
-  display_name: Flutter Build Test
-  publisher_display_name: Your Company
-  identity_name: com.example.flutterbuildtest
-  msix_version: 1.0.0.0
+  display_name: "Flutter Build Test"
+  publisher_display_name: "Your Company"
+  identity_name: "com.example.flutterbuildtest"
+  msix_version: "1.0.0.0"
   
-  # 使用自签名证书
   certificate:
     generate: true
     subject: "CN=Flutter Build Test"
   
-  # 图标配置
   icons:
     background_color: "white"
     show_name: true
   
-  # 其他配置
-  capabilities:
-    - internetClient
-    - privateNetworkClientServer
+  capabilities: "internetClient,privateNetworkClientServer"
   
   start_menu:
-    name: Flutter Build Test
+    name: "Flutter Build Test"
     icon: true
 
 flutter:
