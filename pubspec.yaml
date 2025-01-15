@@ -16,7 +16,7 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   msix: ^3.16.8
 
-msix:
+msix_config:
   # 基本配置
   display_name: Flutter Build Test
   publisher_display_name: Your Company
