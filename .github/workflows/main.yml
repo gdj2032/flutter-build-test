@@ -61,123 +61,123 @@ jobs:
         run: flutter pub get
 
       # macOS 构建
-      - name: Generate self-signed certificate for macOS
-        if: matrix.os == 'macos-latest'
-        run: |
-          echo "Generating self-signed certificate..."
-          security create-keychain -p "" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "" build.keychain
+      # - name: Generate self-signed certificate for macOS
+      #   if: matrix.os == 'macos-latest'
+      #   run: |
+      #     echo "Generating self-signed certificate..."
+      #     security create-keychain -p "" build.keychain
+      #     security default-keychain -s build.keychain
+      #     security unlock-keychain -p "" build.keychain
 
-          # 生成自签名证书
-          CERT_NAME="SelfSignedCert"
-          echo "Generating certificate with CN=$CERT_NAME"
-          echo "Step 1/7: Creating key and certificate..."
-          openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=$CERT_NAME"
-          if [ $? -ne 0 ]; then
-              echo "Failed to generate certificate"
-              exit 1
-          fi
+      #     # 生成自签名证书
+      #     CERT_NAME="SelfSignedCert"
+      #     echo "Generating certificate with CN=$CERT_NAME"
+      #     echo "Step 1/7: Creating key and certificate..."
+      #     openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=$CERT_NAME"
+      #     if [ $? -ne 0 ]; then
+      #         echo "Failed to generate certificate"
+      #         exit 1
+      #     fi
 
-          echo "Step 2/7: Creating PKCS12 file..."
-          openssl pkcs12 -export -out certificate.p12 -inkey key.pem -in cert.pem -passout pass:password -name "$CERT_NAME"
-          if [ $? -ne 0 ]; then
-              echo "Failed to create PKCS12 file"
-              exit 1
-          fi
+      #     echo "Step 2/7: Creating PKCS12 file..."
+      #     openssl pkcs12 -export -out certificate.p12 -inkey key.pem -in cert.pem -passout pass:password -name "$CERT_NAME"
+      #     if [ $? -ne 0 ]; then
+      #         echo "Failed to create PKCS12 file"
+      #         exit 1
+      #     fi
 
-          # 导入证书并设置信任设置
-          echo "Step 3/7: Importing certificate into build.keychain..."
-          security import certificate.p12 -k build.keychain -P "password" -T /usr/bin/codesign -T /usr/bin/productsign
-          if [ $? -ne 0 ]; then
-              echo "Failed to import certificate"
-              exit 1
-          fi
+      #     # 导入证书并设置信任设置
+      #     echo "Step 3/7: Importing certificate into build.keychain..."
+      #     security import certificate.p12 -k build.keychain -P "password" -T /usr/bin/codesign -T /usr/bin/productsign
+      #     if [ $? -ne 0 ]; then
+      #         echo "Failed to import certificate"
+      #         exit 1
+      #     fi
           
-          # 设置证书扩展密钥用法
-          echo "Step 4/7: Setting certificate extensions..."
-          echo "Setting key partition list..."
-          for i in {1..3}; do
-              security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
-              if [ $? -eq 0 ]; then
-                  break
-              fi
-              echo "Attempt $i failed, retrying..."
-              sleep 2
-          done
-          if [ $? -ne 0 ]; then
-              echo "Failed to set key partition list after 3 attempts"
-              exit 1
-          fi
+      #     # 设置证书扩展密钥用法
+      #     echo "Step 4/7: Setting certificate extensions..."
+      #     echo "Setting key partition list..."
+      #     for i in {1..3}; do
+      #         security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
+      #         if [ $? -eq 0 ]; then
+      #             break
+      #         fi
+      #         echo "Attempt $i failed, retrying..."
+      #         sleep 2
+      #     done
+      #     if [ $? -ne 0 ]; then
+      #         echo "Failed to set key partition list after 3 attempts"
+      #         exit 1
+      #     fi
 
-          echo "Adding trusted certificate..."
-          for i in {1..3}; do
-              security add-trusted-cert -d -r trustRoot -k build.keychain cert.pem
-              if [ $? -eq 0 ]; then
-                  break
-              fi
-              echo "Attempt $i failed, retrying..."
-              sleep 2
-          done
-          if [ $? -ne 0 ]; then
-              echo "Failed to add trusted certificate after 3 attempts"
-              exit 1
-          fi
+      #     echo "Adding trusted certificate..."
+      #     for i in {1..3}; do
+      #         security add-trusted-cert -d -r trustRoot -k build.keychain cert.pem
+      #         if [ $? -eq 0 ]; then
+      #             break
+      #         fi
+      #         echo "Attempt $i failed, retrying..."
+      #         sleep 2
+      #     done
+      #     if [ $? -ne 0 ]; then
+      #         echo "Failed to add trusted certificate after 3 attempts"
+      #         exit 1
+      #     fi
 
-          echo "Verifying certificate trust settings..."
-          security dump-trust-settings -d
-          if [ $? -ne 0 ]; then
-              echo "Failed to verify trust settings"
-              exit 1
-          fi
+      #     echo "Verifying certificate trust settings..."
+      #     security dump-trust-settings -d
+      #     if [ $? -ne 0 ]; then
+      #         echo "Failed to verify trust settings"
+      #         exit 1
+      #     fi
 
-          # 验证证书是否导入成功
-          echo "Step 5/7: Verifying certificate import..."
-          echo "Available identities:"
-          security find-identity -v -p codesigning build.keychain
-          if [ $? -ne 0 ]; then
-              echo "Failed to list identities"
-              exit 1
-          fi
+      #     # 验证证书是否导入成功
+      #     echo "Step 5/7: Verifying certificate import..."
+      #     echo "Available identities:"
+      #     security find-identity -v -p codesigning build.keychain
+      #     if [ $? -ne 0 ]; then
+      #         echo "Failed to list identities"
+      #         exit 1
+      #     fi
           
-          echo "Certificate details:"
-          security find-certificate -c "$CERT_NAME" -p build.keychain | openssl x509 -text -noout
-          if [ $? -ne 0 ]; then
-              echo "Failed to get certificate details"
-              exit 1
-          fi
+      #     echo "Certificate details:"
+      #     security find-certificate -c "$CERT_NAME" -p build.keychain | openssl x509 -text -noout
+      #     if [ $? -ne 0 ]; then
+      #         echo "Failed to get certificate details"
+      #         exit 1
+      #     fi
           
-          echo "Keychain list:"
-          security list-keychains
-          if [ $? -ne 0 ]; then
-              echo "Failed to list keychains"
-              exit 1
-          fi
+      #     echo "Keychain list:"
+      #     security list-keychains
+      #     if [ $? -ne 0 ]; then
+      #         echo "Failed to list keychains"
+      #         exit 1
+      #     fi
           
-          echo "Keychain contents:"
-          security dump-keychain build.keychain
-          if [ $? -ne 0 ]; then
-              echo "Failed to dump keychain contents"
-              exit 1
-          fi
+      #     echo "Keychain contents:"
+      #     security dump-keychain build.keychain
+      #     if [ $? -ne 0 ]; then
+      #         echo "Failed to dump keychain contents"
+      #         exit 1
+      #     fi
           
-          echo "Step 6/7: Verifying certificate capabilities..."
-          certtool d cert.pem | grep -i "extended key usage"
-          if [ $? -ne 0 ]; then
-              echo "Failed to verify certificate capabilities"
-              exit 1
-          fi
+      #     echo "Step 6/7: Verifying certificate capabilities..."
+      #     certtool d cert.pem | grep -i "extended key usage"
+      #     if [ $? -ne 0 ]; then
+      #         echo "Failed to verify certificate capabilities"
+      #         exit 1
+      #     fi
           
-          # 清理临时文件
-          echo "Step 7/7: Cleaning up temporary files..."
-          rm -f key.pem cert.pem certificate.p12
-          if [ $? -ne 0 ]; then
-              echo "Failed to clean up temporary files"
-              exit 1
-          fi
+      #     # 清理临时文件
+      #     echo "Step 7/7: Cleaning up temporary files..."
+      #     rm -f key.pem cert.pem certificate.p12
+      #     if [ $? -ne 0 ]; then
+      #         echo "Failed to clean up temporary files"
+      #         exit 1
+      #     fi
           
-          echo "Certificate generation process completed successfully."
-          echo "Certificate name for signing: $CERT_NAME"
+      #     echo "Certificate generation process completed successfully."
+      #     echo "Certificate name for signing: $CERT_NAME"
 
       - name: Build macOS app
         if: matrix.os == 'macos-latest'
@@ -202,19 +202,19 @@ jobs:
             "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg" \
             "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app"
 
-      - name: Codesign macOS dmg with self-signed certificate
-        if: matrix.os == 'macos-latest'
-        run: |
-          echo "Unlocking keychain..."
-          security unlock-keychain -p "" build.keychain
+      # - name: Codesign macOS dmg with self-signed certificate
+      #   if: matrix.os == 'macos-latest'
+      #   run: |
+      #     echo "Unlocking keychain..."
+      #     security unlock-keychain -p "" build.keychain
 
-          echo "Listing available identities..."
-          security find-identity -v -p codesigning build.keychain
+      #     echo "Listing available identities..."
+      #     security find-identity -v -p codesigning build.keychain
 
-          echo "Signing DMG file with self-signed certificate..."
-          CERT_NAME="SelfSignedCert"
-          codesign --deep --force --verify --verbose --sign "$CERT_NAME" --keychain build.keychain --options runtime --entitlements "$PSScriptRoot/entitlements.plist" "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg"
-          echo "Signing completed."
+      #     echo "Signing DMG file with self-signed certificate..."
+      #     CERT_NAME="SelfSignedCert"
+      #     codesign --deep --force --verify --verbose --sign "$CERT_NAME" --keychain build.keychain --options runtime --entitlements "$PSScriptRoot/entitlements.plist" "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg"
+      #     echo "Signing completed."
 
       # Windows 构建
       - name: Download Inno Setup
