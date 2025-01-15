@@ -11,8 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # os: [macos-latest, windows-latest]
-        os: [windows-latest]
+        os: [macos-latest, windows-latest]
 
     outputs:
       app_name: ${{ steps.get_app_info.outputs.app_name || steps.get_app_info_win.outputs.app_name }}
@@ -96,40 +95,18 @@ jobs:
           # 创建 MSIX 包
           echo y | dart run msix:create
           
-          # 查找并移动 MSIX 包
-          $msixPath = "build\windows\x64\runner\Release\flutter_build_test.msix"
+          # 设置目标路径
+          $newPath = "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.msix"
           
-          if (Test-Path $msixPath) {
-              # 清理应用名称和版本号
-              $appName = "${{ env.APP_NAME }}"
-              $appVersion = "${{ env.APP_VERSION }}"
-              
-              # 构建新文件名和路径
-              $newFileName = "release-$appName-$appVersion.msix"
-              $newPath = Join-Path "release" $newFileName
-              
-              Write-Output "MSIX package found at: $msixPath"
-              Write-Output "Moving to: $newPath"
-              
-              # 确保 release 目录存在
-              New-Item -ItemType Directory -Path "release" -Force | Out-Null
-              
-              # 移动文件
-              Move-Item -Path $msixPath -Destination $newPath
-              Write-Output "MSIX package successfully moved to $newPath"
-          } else {
-              Write-Output "MSIX package not found at: $msixPath"
-              Write-Output "Searching in current directory..."
-              $msixFile = Get-ChildItem -Path . -Recurse -Filter *.msix | Select-Object -First 1
-              if ($msixFile) {
-                  Write-Output "Found MSIX package at: $($msixFile.FullName)"
-                  Move-Item -Path $msixFile.FullName -Destination $newPath
-                  Write-Output "MSIX package successfully moved to $newPath"
-              } else {
-                  Write-Error "No MSIX package found"
-                  exit 1
-              }
-          }
+          # 确保 release 目录存在
+          New-Item -ItemType Directory -Path "release" -Force | Out-Null
+          
+          # 移动并重命名 MSIX 包
+          $sourcePath = "build\windows\x64\runner\Release\flutter_build_test.msix"
+          Write-Output "Moving MSIX package from: $sourcePath"
+          Write-Output "Renaming to: $newPath"
+          Move-Item -Path $sourcePath -Destination $newPath
+          Write-Output "MSIX package successfully moved and renamed"
 
       # 上传构建产物
       - name: Upload macOS artifact
