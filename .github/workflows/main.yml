@@ -3,8 +3,7 @@ name: Flutter PC Build and Release
 on:
   push:
     branches:
-      - 'release/0.0.1'
-      - /^release\/.*$/
+      - 'release/**'
 
 jobs:
   build:
@@ -99,10 +98,9 @@ jobs:
           echo "The app version is ${{ env.appVersion }}"
 
           $sourceFile = "build\windows\x64\runner\Release\flutter_build_test.msix"
-          $destinationFolder = "release"
-          $newFileName = "release-${{ env.appName }}-${{ env.appVersion }}.msix"
+          $newFile = "release\release-${{ env.appName }}-${{ env.appVersion }}.msix"
 
-          Copy-Item -Path $sourceFile -Destination $destinationFolder -NewName $newFileName
+          Copy-Item -Path $sourceFile -Destination $newFile -Force
 
       # 上传构建产物
       - name: Upload macOS artifact
