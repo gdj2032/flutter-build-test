@@ -206,16 +206,25 @@ jobs:
           }
 
           # 验证签名
-          Write-Output "Verifying signature..."
-          & $signtoolPath verify /pa /c "$exePath"
+          Write-Output "Verifying signature for file: $exePath"
+          if (-Not (Test-Path $exePath)) {
+              Write-Error "File not found for verification: $exePath"
+              exit 1
+          }
+          
+          # 使用完整路径进行验证
+          $fullExePath = Resolve-Path $exePath
+          & $signtoolPath verify /pa "$fullExePath"
           if ($LASTEXITCODE -ne 0) {
               Write-Error "Signature verification failed with exit code $LASTEXITCODE"
+              Write-Output "Running additional verification with debug output:"
+              & $signtoolPath verify /pa /v "$fullExePath"
               exit $LASTEXITCODE
           }
 
           # 清理临时证书文件
           Remove-Item "$env:RUNNER_TEMP\certificate.cer"
-          Write-Output "Signing process completed successfully"
+          Write-Output "Signing and verification process completed successfully"
 
       # 上传构建产物
       - name: Upload macOS artifact
