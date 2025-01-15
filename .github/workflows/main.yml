@@ -96,10 +96,38 @@ jobs:
           
           # 设置证书扩展密钥用法
           echo "Step 4/7: Setting certificate extensions..."
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
-          security add-trusted-cert -d -r trustRoot -k build.keychain cert.pem
+          echo "Setting key partition list..."
+          for i in {1..3}; do
+              security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
+              if [ $? -eq 0 ]; then
+                  break
+              fi
+              echo "Attempt $i failed, retrying..."
+              sleep 2
+          done
           if [ $? -ne 0 ]; then
-              echo "Failed to set certificate extensions"
+              echo "Failed to set key partition list after 3 attempts"
+              exit 1
+          fi
+
+          echo "Adding trusted certificate..."
+          for i in {1..3}; do
+              security add-trusted-cert -d -r trustRoot -k build.keychain cert.pem
+              if [ $? -eq 0 ]; then
+                  break
+              fi
+              echo "Attempt $i failed, retrying..."
+              sleep 2
+          done
+          if [ $? -ne 0 ]; then
+              echo "Failed to add trusted certificate after 3 attempts"
+              exit 1
+          fi
+
+          echo "Verifying certificate trust settings..."
+          security dump-trust-settings -d
+          if [ $? -ne 0 ]; then
+              echo "Failed to verify trust settings"
               exit 1
           fi
 
