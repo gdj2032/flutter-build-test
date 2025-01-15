@@ -17,8 +17,8 @@ dev_dependencies:
   msix: ^3.16.8
 
 msix_config:
-  display_name: "flutter_build_test"
-  publisher_display_name: "flutter_build_test_company"
+  display_name: flutter_build_test
+  publisher_display_name: flutter_build_test_company
   identity_name: "com.example.flutterbuildtest"
   msix_version: "1.0.0"
   
