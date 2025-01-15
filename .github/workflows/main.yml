@@ -97,10 +97,15 @@ jobs:
           # 移动并重命名 MSIX 包
           $msixFile = Get-ChildItem -Path . -Filter *.msix | Select-Object -First 1
           if ($msixFile) {
-              $newPath = Join-Path "release" ("release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.msix")
+              $appName = "${{ env.APP_NAME }}"
+              $appVersion = "${{ env.APP_VERSION }}"
+              $newFileName = "release-$appName-$appVersion.msix"
+              $newPath = Join-Path "release" $newFileName
+              
+              Write-Output "Moving MSIX package to: $newPath"
               New-Item -ItemType Directory -Path "release" -Force | Out-Null
               Move-Item -Path $msixFile.FullName -Destination $newPath
-              Write-Output "MSIX package moved to $newPath"
+              Write-Output "MSIX package successfully moved to $newPath"
           } else {
               Write-Error "No MSIX package found"
               exit 1
