@@ -85,17 +85,6 @@ jobs:
             "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app"
 
       # Windows 构建
-      - name: Build Windows app
-        if: matrix.os == 'windows-latest'
-        run: |
-          flutter build windows --release
-          mkdir -p release
-
-      - name: Install msix package
-        if: matrix.os == 'windows-latest'
-        run: |
-          dart pub global activate msix
-
       - name: Create MSIX package
         if: matrix.os == 'windows-latest'
         run: |
