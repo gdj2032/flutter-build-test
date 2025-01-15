@@ -90,9 +90,10 @@ jobs:
         run: |
           # 设置环境变量以自动接受证书安装
           $env:MSIX_AUTO_INSTALL_CERT = "true"
+          $env:MSIX_CERT_PASSWORD = "password"
           
           # 创建 MSIX 包
-          dart run msix:create
+          dart run msix:create --yes
           
           # 移动并重命名 MSIX 包
           $msixFile = Get-ChildItem -Path . -Filter *.msix | Select-Object -First 1
