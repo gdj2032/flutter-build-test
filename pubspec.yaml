@@ -17,14 +17,14 @@ dev_dependencies:
   msix: ^3.16.8
 
 msix_config:
-  display_name: "Flutter Build Test"
+  display_name: "flutter_build_test"
   publisher_display_name: "Your Company"
   identity_name: "com.example.flutterbuildtest"
   msix_version: "1.0.0.0"
   
   certificate:
     generate: true
-    subject: "CN=Flutter Build Test"
+    subject: "CN=flutter_build_test"
   
   icons:
     background_color: "white"
@@ -33,7 +33,7 @@ msix_config:
   capabilities: "internetClient,privateNetworkClientServer"
   
   start_menu:
-    name: "Flutter Build Test"
+    name: "flutter_build_test"
     icon: true
 
 flutter:
