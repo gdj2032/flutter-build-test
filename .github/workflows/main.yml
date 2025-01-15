@@ -89,10 +89,14 @@ jobs:
         run: |
           # 设置环境变量以自动接受证书安装
           $env:MSIX_AUTO_INSTALL_CERT = "true"
-          $env:MSIX_CERT_PASSWORD = "password"
+          $env:MSIX_CERT_PASSWORD = "flutter_build_test"
+
+          # 安装 macOS 生成的 p12 证书
+          $certPath = "flutter_build_test.p12"
+          Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\Root -Password (ConvertTo-SecureString -String $env:MSIX_CERT_PASSWORD -AsPlainText -Force)
 
           # 创建 MSIX 包
-          echo y | dart run msix:create
+          dart run msix:create
 
           echo "The app name is ${{ env.app_name }}"
           echo "The app version is ${{ env.app_version }}"
