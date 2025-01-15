@@ -94,7 +94,6 @@ jobs:
           # 创建 MSIX 包
           echo y | dart run msix:create
 
-          echo
           echo "The app name is ${{ env.app_name }}"
           echo "The app version is ${{ env.app_version }}"
 
@@ -150,7 +149,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           VERSION: ${{ needs.build.outputs.app_version }}
         with:
-          tag_name: "v${{ steps.get_version_name.outputs.app_version }}"
+          tag_name: "v${{ needs.build.outputs.app_version }}"
           name: Release ${{ needs.build.outputs.app_name }} ${{ needs.build.outputs.app_version }}
           body: 'Flutter PC Build and Release'
           draft: false
