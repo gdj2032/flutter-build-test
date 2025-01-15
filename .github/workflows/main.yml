@@ -98,8 +98,8 @@ jobs:
           $msixFile = Get-ChildItem -Path . -Filter *.msix | Select-Object -First 1
           if ($msixFile) {
               # 清理应用名称和版本号
-              $appName = "${{ env.APP_NAME }}".Trim() -replace '[^a-zA-Z0-9]', '_'
-              $appVersion = "${{ env.APP_VERSION }}".Trim() -replace '[^0-9.]', ''
+              $appName = "${{ env.APP_NAME }}"
+              $appVersion = "${{ env.APP_VERSION }}"
               
               # 构建新文件名和路径
               $newFileName = "release-$appName-$appVersion.msix"
