@@ -18,9 +18,9 @@ dev_dependencies:
 
 msix_config:
   display_name: "flutter_build_test"
-  publisher_display_name: "flutter_build_test_company"
-  identity_name: "com.example.flutterbuildtest"
-  msix_version: "1.0.0.0"
+  # publisher_display_name: "flutter_build_test_company"
+  # identity_name: "com.example.flutterbuildtest"
+  # msix_version: "1.0.0"
   
   certificate:
     generate: true
