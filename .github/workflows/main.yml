@@ -241,25 +241,37 @@ jobs:
           $certificateName = "SelfSignedCert"
           $password = "Password123!"
 
-          # 生成自签名证书并安装到受信任的根证书存储
+          # 生成自签名证书
+          echo "Step 1/5: Generating self-signed certificate..."
           $cert = New-SelfSignedCertificate -DnsName $certificateName `
             -CertStoreLocation Cert:\LocalMachine\My `
             -Type CodeSigningCert `
             -KeyUsage DigitalSignature `
             -KeySpec Signature `
-            -KeyLength 2048 `
+            -KeyLength 4096 `
             -HashAlgorithm SHA256 `
             -NotAfter (Get-Date).AddYears(5) `
             -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3")
 
           # 将证书安装到受信任的根证书存储
+          echo "Step 2/5: Installing certificate to trusted root store..."
           $cert | Export-Certificate -FilePath "$env:RUNNER_TEMP\certificate.cer" -Type CERT
           Import-Certificate -FilePath "$env:RUNNER_TEMP\certificate.cer" -CertStoreLocation Cert:\LocalMachine\Root
 
+          # 验证证书安装
+          echo "Verifying certificate installation..."
+          $installedCert = Get-ChildItem -Path Cert:\LocalMachine\Root | Where-Object { $_.Subject -eq "CN=$certificateName" }
+          if (-not $installedCert) {
+              Write-Error "Certificate not found in trusted root store"
+              exit 1
+          }
+
           # 导出证书为 pfx 文件
+          echo "Step 3/5: Exporting certificate as PFX..."
           Export-PfxCertificate -Cert $cert -FilePath $certificatePath -Password (ConvertTo-SecureString -String $password -Force -AsPlainText)
 
           # 签名 exe 文件
+          echo "Step 4/5: Signing executable..."
           $exePath = "release\release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe"
           $signtoolPath = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
 
@@ -270,7 +282,7 @@ jobs:
           }
 
           # 签名文件
-          Write-Output "Signing file: $exePath"
+          echo "Signing file: $exePath"
           & $signtoolPath sign /fd SHA256 /a /tr http://timestamp.digicert.com /td SHA256 /v /sm /s My /n "$certificateName" "$exePath"
           if ($LASTEXITCODE -ne 0) {
               Write-Error "Signing failed with exit code $LASTEXITCODE"
@@ -278,25 +290,31 @@ jobs:
           }
 
           # 验证签名
-          Write-Output "Verifying signature for file: $exePath"
-          if (-Not (Test-Path $exePath)) {
-              Write-Error "File not found for verification: $exePath"
-              exit 1
-          }
-          
-          # 使用完整路径进行验证
+          echo "Step 5/5: Verifying signature..."
           $fullExePath = Resolve-Path $exePath
-          & $signtoolPath verify /pa "$fullExePath"
+          & $signtoolPath verify /pa /v "$fullExePath"
           if ($LASTEXITCODE -ne 0) {
               Write-Error "Signature verification failed with exit code $LASTEXITCODE"
-              Write-Output "Running additional verification with debug output:"
+              echo "Running additional verification with debug output:"
               & $signtoolPath verify /pa /v "$fullExePath"
+              exit $LASTEXITCODE
+          }
+
+          # 验证证书链
+          echo "Verifying certificate chain..."
+          & $signtoolPath verify /pa /v /c "$fullExePath"
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Certificate chain verification failed with exit code $LASTEXITCODE"
               exit $LASTEXITCODE
           }
 
           # 清理临时证书文件
           Remove-Item "$env:RUNNER_TEMP\certificate.cer"
           Write-Output "Signing and verification process completed successfully"
+          Write-Output "Certificate thumbprint: $($cert.Thumbprint)"
+          Write-Output "Certificate subject: $($cert.Subject)"
+          Write-Output "Certificate issuer: $($cert.Issuer)"
+          Write-Output "Certificate expiration: $($cert.NotAfter)"
 
       # 上传构建产物
       - name: Upload macOS artifact
