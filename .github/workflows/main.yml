@@ -97,8 +97,8 @@ jobs:
           echo "The app name is ${{ env.app_name }}"
           echo "The app version is ${{ env.app_version }}"
 
-          $sourceFile = "build\windows\x64\runner\Release\${{ env.appName }}.msix"
-          $newFile = "release\release-${{ env.appName }}-${{ env.appVersion }}.msix"
+          $sourceFile = "build\windows\x64\runner\Release\${{ env.app_name }}.msix"
+          $newFile = "release\release-${{ env.app_name }}-${{ env.app_version }}.msix"
 
           # 确保 release 目录存在
           New-Item -ItemType Directory -Path "release" -Force | Out-Null
