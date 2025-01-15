@@ -93,7 +93,7 @@ jobs:
           $env:MSIX_CERT_PASSWORD = "password"
           
           # 创建 MSIX 包
-          dart run msix:create --yes
+          echo y | dart run msix:create
           
           # 移动并重命名 MSIX 包
           $msixFile = Get-ChildItem -Path . -Filter *.msix | Select-Object -First 1
