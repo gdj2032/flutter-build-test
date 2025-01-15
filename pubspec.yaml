@@ -20,7 +20,7 @@ msix_config:
   display_name: flutter_build_test1
   publisher_display_name: flutter_build_test_company
   identity_name: com.example.flutter.build.test
-  msix_version: 1.0.0
+  msix_version: 1.0.0.0
   
   certificate:
     generate: true
