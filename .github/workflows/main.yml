@@ -91,27 +91,18 @@ jobs:
           # 设置环境变量以自动接受证书安装
           $env:MSIX_AUTO_INSTALL_CERT = "true"
           $env:MSIX_CERT_PASSWORD = "password"
-          
-          # 保存原始版本号
-          $originalVersion = "${{ env.appVersion }}"
-          Write-Output "Original version before MSIX: $originalVersion"
-          
+
           # 创建 MSIX 包
           echo y | dart run msix:create
-          
-          # 使用原始版本号设置目标路径
-          $newPath = "release/release-${{ env.appName }}-$originalVersion.msix"
-          Write-Output "Using original version for MSIX package: $originalVersion"
-          
-          # 确保 release 目录存在
-          New-Item -ItemType Directory -Path "release" -Force | Out-Null
-          
-          # 移动并重命名 MSIX 包
-          $sourcePath = "build\windows\x64\runner\Release\flutter_build_test.msix"
-          Write-Output "Moving MSIX package from: $sourcePath"
-          Write-Output "Renaming to: $newPath"
-          Move-Item -Path $sourcePath -Destination $newPath
-          Write-Output "MSIX package successfully moved and renamed"
+
+          echo "The app name is ${{ env.appName }}"
+          echo "The app version is ${{ env.appVersion }}"
+
+          $sourceFile = "build\windows\x64\runner\Release\flutter_build_test.msix"
+          $destinationFolder = "release"
+          $newFileName = "release-${{ env.appName }}-${{ env.appVersion }}.msix"
+
+          Copy-Item -Path $sourceFile -Destination $destinationFolder -NewName $newFileName
 
       # 上传构建产物
       - name: Upload macOS artifact
