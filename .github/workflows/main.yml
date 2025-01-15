@@ -88,20 +88,6 @@ jobs:
       - name: Create MSIX package
         if: matrix.os == 'windows-latest'
         run: |
-          # 生成自签名证书
-          $certName = "FlutterBuildTestCert"
-          $certPath = "flutter_build_test.pfx"
-          
-          # 创建证书
-          $cert = New-SelfSignedCertificate -Type CodeSigningCert `
-            -Subject "CN=$certName" `
-            -KeyUsage DigitalSignature `
-            -FriendlyName $certName `
-            -NotAfter (Get-Date).AddYears(10)
-          
-          # 导出证书
-          Export-PfxCertificate -Cert $cert -FilePath $certPath -Password (ConvertTo-SecureString -String "password" -Force -AsPlainText)
-          
           # 设置环境变量以自动接受证书安装
           $env:MSIX_AUTO_INSTALL_CERT = "true"
           
