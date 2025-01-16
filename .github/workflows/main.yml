@@ -92,9 +92,10 @@ jobs:
           $env:MSIX_CERT_PASSWORD = "flutter_build_test"
           $env:MSIX_NO_PROMPT = "true"
 
-          # 安装 .crt 证书到受信任的根证书颁发机构
-          $certPath = "flutter_build_test.crt"
-          Import-Certificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\TrustedPublisher
+          # 安装 .pfx 证书到受信任的发布者存储区
+          $certPath = "flutter_build_test.pfx"
+          $certPassword = ConvertTo-SecureString -String "flutter_build_test" -AsPlainText -Force
+          Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\TrustedPublisher -Password $certPassword
           
           # 创建 MSIX 包
           echo n | dart run msix:create
