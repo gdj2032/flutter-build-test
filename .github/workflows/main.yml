@@ -23,9 +23,29 @@ jobs:
       app_version: ${{ steps.get_app_info.outputs.app_version || steps.get_app_info_win.outputs.app_version }}
 
     steps:
+      - name: Verify Secrets
+        run: |
+          echo "Checking required environment variables..."
+          if [ -z "$WIN_CERTIFICATE_PWD" ]; then
+            echo "Error: WIN_CERTIFICATE_PWD is not set"
+            exit 1
+          fi
+          if [ -z "$WIN_CERTIFICATE" ]; then
+            echo "Error: WIN_CERTIFICATE is not set"
+            exit 1
+          fi
+          if [ -z "$MAC_CERTIFICATE_PWD" ]; then
+            echo "Error: MAC_CERTIFICATE_PWD is not set"
+            exit 1
+          fi
+          if [ -z "$MAC_CERTIFICATE" ]; then
+            echo "Error: MAC_CERTIFICATE is not set"
+            exit 1
+          fi
+          echo "All required environment variables are set"
+
       - name: Checkout code
         uses: actions/checkout@v2
-
       # 获取应用信息
       - name: Get app version and name
         id: get_app_info
