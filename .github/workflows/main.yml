@@ -137,21 +137,7 @@ jobs:
       - name: Create MSIX package
         if: matrix.os == 'windows-latest'
         run: |
-          # 解码 base64 证书
-          echo "${{ secrets.WIN_CERTIFICATE }}" | base64 --decode > flutter_build_test.pfx
-
-          # 检查并安装 .pfx 证书到受信任的根和发布者存储区
-          $certPath = "flutter_build_test.pfx"
-          if (-Not (Test-Path $certPath)) {
-              Write-Error "Certificate file not found: $certPath"
-              exit 1
-          }
-          $certPassword = ConvertTo-SecureString -String "${{ secrets.WIN_CERTIFICATE_PWD }}" -AsPlainText -Force
-          Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\Root -Password $certPassword
-          Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\TrustedPublisher -Password $certPassword
-
-          # 创建 MSIX 包并指定证书
-          echo n | dart run msix:create --certificate-path flutter_build_test.pfx --certificate-password "${{ secrets.WIN_CERTIFICATE_PWD }}"
+          echo y | dart run msix:create
 
           $sourceFile = "build\windows\x64\runner\Release\${{ env.app_name }}.msix"
           $newFile = "release\release-${{ env.app_name }}-${{ env.app_version }}.msix"
