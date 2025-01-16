@@ -101,12 +101,30 @@ jobs:
           # 获取证书指纹
           CERT_FINGERPRINT=$(security find-certificate -c "flutter_build_test" -p build.keychain | openssl x509 -noout -fingerprint -sha1 | sed 's/://g' | cut -d= -f2)
 
+          # 保存当前环境变量
+          CURRENT_APP_NAME="${{ env.APP_NAME }}"
+          CURRENT_APP_VERSION="${{ env.APP_VERSION }}"
+
+          # 调试：打印当前环境变量
+          echo "Before signing:"
+          echo "APP_NAME: $CURRENT_APP_NAME"
+          echo "APP_VERSION: $CURRENT_APP_VERSION"
+
           # 构建应用并签名
           flutter build macos --release --dart-define=CODESIGN_IDENTITY="$CERT_FINGERPRINT"
           mkdir -p release
 
           # 手动签名应用
-          codesign --deep --force --verify --verbose --sign "$CERT_FINGERPRINT" build/macos/Build/Products/Release/${{ env.APP_NAME }}.app
+          codesign --deep --force --verify --verbose --sign "$CERT_FINGERPRINT" build/macos/Build/Products/Release/$CURRENT_APP_NAME.app
+
+          # 恢复环境变量
+          echo "APP_NAME=$CURRENT_APP_NAME" >> $GITHUB_ENV
+          echo "APP_VERSION=$CURRENT_APP_VERSION" >> $GITHUB_ENV
+
+          # 调试：签名后验证环境变量
+          echo "After signing:"
+          echo "APP_NAME: $CURRENT_APP_NAME"
+          echo "APP_VERSION: $CURRENT_APP_VERSION"
 
           # 清理证书
           security delete-keychain build.keychain
