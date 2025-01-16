@@ -26,19 +26,19 @@ jobs:
       - name: Verify Secrets
         run: |
           echo "Checking required environment variables..."
-          if [ -z "$WIN_CERTIFICATE_PWD" ]; then
+          if [ -z "${{ env.WIN_CERTIFICATE_PWD }}" ]; then
             echo "Error: WIN_CERTIFICATE_PWD is not set"
             exit 1
           fi
-          if [ -z "$WIN_CERTIFICATE" ]; then
+          if [ -z "${{ env.WIN_CERTIFICATE }}" ]; then
             echo "Error: WIN_CERTIFICATE is not set"
             exit 1
           fi
-          if [ -z "$MAC_CERTIFICATE_PWD" ]; then
+          if [ -z "${{ env.MAC_CERTIFICATE_PWD }}" ]; then
             echo "Error: MAC_CERTIFICATE_PWD is not set"
             exit 1
           fi
-          if [ -z "$MAC_CERTIFICATE" ]; then
+          if [ -z "${{ env.MAC_CERTIFICATE }}" ]; then
             echo "Error: MAC_CERTIFICATE is not set"
             exit 1
           fi
