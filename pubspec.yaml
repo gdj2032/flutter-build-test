@@ -27,9 +27,6 @@ msix_config:
   #   path: flutter_build_test.p12
   #   password: flutter_build_test
 
-  certificate_path: flutter_build_test.pfx
-  certificate_password: flutter_build_test
-  
   icons:
     background_color: white
     show_name: true
