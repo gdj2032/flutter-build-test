@@ -80,12 +80,15 @@ jobs:
           security import flutter_build_test.p12 -k build.keychain -P flutter_build_test -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k flutter_build_test build.keychain
 
+          # 获取证书指纹
+          CERT_FINGERPRINT=$(security find-certificate -c "flutter_build_test" -p build.keychain | openssl x509 -noout -fingerprint -sha1 | sed 's/://g' | cut -d= -f2)
+
           # 构建应用并签名
-          flutter build macos --release --dart-define=CODESIGN_IDENTITY="flutter_build_test"
+          flutter build macos --release --dart-define=CODESIGN_IDENTITY="$CERT_FINGERPRINT"
           mkdir -p release
 
           # 手动签名应用
-          codesign --deep --force --verify --verbose --sign "flutter_build_test" build/macos/Build/Products/Release/${{ env.app_name }}.app
+          codesign --deep --force --verify --verbose --sign "$CERT_FINGERPRINT" build/macos/Build/Products/Release/${{ env.app_name }}.app
 
           # 清理证书
           security delete-keychain build.keychain
