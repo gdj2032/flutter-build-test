@@ -6,7 +6,7 @@ on:
       - 'release/**'
 
 env:
-  appName: caspi
+  APP_NAME: caspi
 
 jobs:
   build:
@@ -16,7 +16,7 @@ jobs:
         os: [macos-latest, windows-latest]
 
     outputs:
-      APP_NAME: ${{ env.appName }}
+      APP_NAME: ${{ env.APP_NAME }}
       APP_VERSION: ${{ steps.get_app_info.outputs.APP_VERSION || steps.get_app_info_win.outputs.APP_VERSION }}
 
     steps:
@@ -106,7 +106,7 @@ jobs:
           mkdir -p release
 
           # 手动签名应用
-          codesign --deep --force --verify --verbose --sign "$CERT_FINGERPRINT" build/macos/Build/Products/Release/${{ env.app_name }}.app
+          codesign --deep --force --verify --verbose --sign "$CERT_FINGERPRINT" build/macos/Build/Products/Release/${{ env.APP_NAME }}.app
 
           # 清理证书
           security delete-keychain build.keychain
@@ -120,14 +120,14 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: |
           create-dmg \
-            --volname "${{ env.app_name }} ${{ env.app_version }} Installer" \
+            --volname "${{ env.APP_NAME }} ${{ env.APP_VERSION }} Installer" \
             --background "assets/images/install_background.png" \
             --window-pos 200 120 \
             --window-size 600 400 \
-            --icon "${{ env.app_name }}.app" 200 190 \
+            --icon "${{ env.APP_NAME }}.app" 200 190 \
             --app-drop-link 400 185 \
-            "release/release-${{ env.app_name }}-${{ env.app_version }}.dmg" \
-            "build/macos/Build/Products/Release/${{ env.app_name }}.app"
+            "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg" \
+            "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app"
 
       # Windows 构建
       - name: Create MSIX package
@@ -149,8 +149,8 @@ jobs:
           # 创建 MSIX 包并指定证书
           echo n | dart run msix:create --certificate-path flutter_build_test.pfx --certificate-password "${{ secrets.WIN_CERTIFICATE_PWD }}"
 
-          $sourceFile = "build\windows\x64\runner\Release\${{ env.app_name }}.msix"
-          $newFile = "release\release-${{ env.app_name }}-${{ env.app_version }}.msix"
+          $sourceFile = "build\windows\x64\runner\Release\${{ env.APP_NAME }}.msix"
+          $newFile = "release\release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.msix"
 
           # 确保 release 目录存在
           New-Item -ItemType Directory -Path "release" -Force | Out-Null
@@ -165,14 +165,14 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: macos-artifact
-          path: ./release/release-${{ env.app_name }}-${{ env.app_version }}.dmg
+          path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
 
       - name: Upload Windows artifact
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v3
         with:
           name: windows-artifact
-          path: ./release/release-${{ env.app_name }}-${{ env.app_version }}.msix
+          path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.msix
 
   release:
     needs: build
