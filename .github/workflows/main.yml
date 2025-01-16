@@ -5,6 +5,12 @@ on:
     branches:
       - 'release/**'
 
+env:
+  WIN_CERTIFICATE_PASSWORD: flutter_build_test
+  WIN_CERTIFICATE_PATH: flutter_build_test.pfx
+  MAC_CERTIFICATE_PASSWORD: flutter_build_test
+  MAC_CERTIFICATE_PATH: flutter_build_test.p12
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -63,8 +69,24 @@ jobs:
       - name: Build macOS app
         if: matrix.os == 'macos-latest'
         run: |
+          # 生成自签名证书
+          openssl req -x509 -newkey rsa:4096 -keyout flutter_build_test.key -out flutter_build_test.crt -days 365 -nodes -subj "/CN=flutter_build_test"
+          openssl pkcs12 -export -out flutter_build_test.p12 -inkey flutter_build_test.key -in flutter_build_test.crt -password pass:flutter_build_test
+
+          # 安装证书到钥匙串
+          security create-keychain -p flutter_build_test build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p flutter_build_test build.keychain
+          security import flutter_build_test.p12 -k build.keychain -P flutter_build_test -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k flutter_build_test build.keychain
+
+          # 构建应用
           flutter build macos --release
           mkdir -p release
+
+          # 清理证书
+          security delete-keychain build.keychain
+          rm -f flutter_build_test.*
 
       - name: Install create-dmg
         if: matrix.os == 'macos-latest'
