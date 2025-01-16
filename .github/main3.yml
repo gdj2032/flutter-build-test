@@ -33,17 +33,17 @@ jobs:
           echo "app_name=$APP_NAME" >> $GITHUB_ENV
         shell: bash
 
-      # - name: Get app version and name (Windows)
-      #   if: matrix.os == 'windows-latest'
-      #   id: get_app_info_win
-      #   run: |
-      #     $APP_VERSION = (Get-Content -Path pubspec.yaml | Where-Object { $_ -match '^version:' }).Split(':')[1].Trim()
-      #     $APP_NAME = (Get-Content -Path pubspec.yaml | Where-Object { $_ -match '^name:' }).Split(':')[1].Trim()
-      #     echo "::set-output name=app_version::$APP_VERSION"
-      #     echo "::set-output name=app_name::$APP_NAME"
-      #     echo "app_version=$APP_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
-      #     echo "app_name=$APP_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append
-      #   shell: pwsh
+      - name: Get app version and name (Windows)
+        if: matrix.os == 'windows-latest'
+        id: get_app_info_win
+        run: |
+          $APP_VERSION = (Get-Content -Path pubspec.yaml | Where-Object { $_ -match '^version:' }).Split(':')[1].Trim()
+          $APP_NAME = (Get-Content -Path pubspec.yaml | Where-Object { $_ -match '^name:' }).Split(':')[1].Trim()
+          echo "::set-output name=app_version::$APP_VERSION"
+          echo "::set-output name=app_name::$APP_NAME"
+          echo "app_version=$APP_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "app_name=$APP_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append
+        shell: pwsh
 
       - name: Print APP_NAME and APP_VERSION
         run: |
