@@ -5,19 +5,6 @@ on:
     branches:
       - 'release/**'
 
-# 确保以下 secrets 已在 GitHub 仓库的 Settings -> Secrets and variables -> Actions 中设置：
-# - WIN_CERTIFICATE_PWD
-# - WIN_CERTIFICATE
-# - MACOS_CERTIFICATE_PWD
-# - MACOS_CERTIFICATE
-# - PERSONAL_ACCESS_TOKEN
-
-  # 注意：这些 secrets 需要在 GitHub 仓库的 Settings -> Secrets and variables -> Actions 中设置
-  # 1. 点击 New repository secret
-  # 2. 输入 Name（如 WIN_CERTIFICATE_PWD）
-  # 3. 输入 Value（证书密码）
-  # 4. 点击 Add secret
-
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -26,12 +13,13 @@ jobs:
         os: [macos-latest, windows-latest]
 
     outputs:
-      APP_NAME: ${{ steps.get_app_info.outputs.APP_NAME || steps.get_app_info_win.outputs.APP_NAME }}
-      APP_VERSION: ${{ steps.get_app_info.outputs.APP_VERSION || steps.get_app_info_win.outputs.APP_VERSION }}
+      app_name: ${{ steps.get_app_info.outputs.app_name || steps.get_app_info_win.outputs.app_name }}
+      app_version: ${{ steps.get_app_info.outputs.app_version || steps.get_app_info_win.outputs.app_version }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
       # 获取应用信息
       - name: Get app version and name
         id: get_app_info
@@ -39,8 +27,8 @@ jobs:
         run: |
           APP_VERSION=$(grep -E '^version:' pubspec.yaml | awk '{print $2}' | tr -d "'")
           APP_NAME=$(grep -E '^name:' pubspec.yaml | awk '{print $2}')
-          echo "::set-output name=APP_VERSION::$APP_VERSION"
-          echo "::set-output name=APP_NAME::$APP_NAME"
+          echo "::set-output name=app_version::$APP_VERSION"
+          echo "::set-output name=app_name::$APP_NAME"
           echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
           echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
         shell: bash
@@ -51,8 +39,8 @@ jobs:
         run: |
           $APP_VERSION = (Get-Content -Path pubspec.yaml | Where-Object { $_ -match '^version:' }).Split(':')[1].Trim()
           $APP_NAME = (Get-Content -Path pubspec.yaml | Where-Object { $_ -match '^name:' }).Split(':')[1].Trim()
-          echo "::set-output name=APP_VERSION::$APP_VERSION"
-          echo "::set-output name=APP_NAME::$APP_NAME"
+          echo "::set-output name=app_version::$APP_VERSION"
+          echo "::set-output name=app_name::$APP_NAME"
           echo "APP_VERSION=$APP_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
           echo "APP_NAME=$APP_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
@@ -215,16 +203,16 @@ jobs:
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          VERSION: ${{ needs.build.outputs.APP_VERSION }}
+          VERSION: ${{ needs.build.outputs.app_version }}
         with:
-          tag_name: "v${{ needs.build.outputs.APP_VERSION }}"
-          name: Release ${{ needs.build.outputs.APP_NAME }} ${{ needs.build.outputs.APP_VERSION }}
+          tag_name: "v${{ needs.build.outputs.app_version }}"
+          name: Release ${{ needs.build.outputs.app_name }} ${{ needs.build.outputs.app_version }}
           body: 'Flutter PC Build and Release'
           draft: false
           prerelease: false
           files: |
-            release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.dmg
-            release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.msix
+            release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.dmg
+            release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.msix
 
   merge:
     needs: release
