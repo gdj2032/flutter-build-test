@@ -100,9 +100,9 @@ jobs:
           }
           $certPassword = ConvertTo-SecureString -String "flutter_build_test" -AsPlainText -Force
           Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\TrustedPublisher -Password $certPassword
-          
-          # 创建 MSIX 包
-          echo n | dart run msix:create
+
+          # 创建 MSIX 包并指定证书
+          echo n | dart run msix:create --certificate-path flutter_build_test.pfx --certificate-password flutter_build_test
 
           $sourceFile = "build\windows\x64\runner\Release\${{ env.app_name }}.msix"
           $newFile = "release\release-${{ env.app_name }}-${{ env.app_version }}.msix"
