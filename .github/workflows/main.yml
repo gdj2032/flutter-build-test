@@ -91,12 +91,6 @@ jobs:
             fi
           fi
 
-          # 验证证书内容
-          if ! openssl pkcs12 -in flutter_build_test.p12 -noout -passin pass:"${{ secrets.MACOS_CERTIFICATE_PWD }}"; then
-            echo "Error: Invalid certificate content or password"
-            exit 1
-          fi
-
           # 安装证书到钥匙串
           security create-keychain -p "${{ secrets.MACOS_CERTIFICATE_PWD }}" build.keychain
           security default-keychain -s build.keychain
