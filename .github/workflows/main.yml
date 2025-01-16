@@ -26,8 +26,8 @@ jobs:
         os: [macos-latest, windows-latest]
 
     outputs:
-      app_name: ${{ steps.get_app_info.outputs.app_name || steps.get_app_info_win.outputs.app_name }}
-      app_version: ${{ steps.get_app_info.outputs.app_version || steps.get_app_info_win.outputs.app_version }}
+      APP_NAME: ${{ steps.get_app_info.outputs.APP_NAME || steps.get_app_info_win.outputs.APP_NAME }}
+      APP_VERSION: ${{ steps.get_app_info.outputs.APP_VERSION || steps.get_app_info_win.outputs.APP_VERSION }}
 
     steps:
       - name: Checkout code
@@ -39,10 +39,10 @@ jobs:
         run: |
           APP_VERSION=$(grep -E '^version:' pubspec.yaml | awk '{print $2}' | tr -d "'")
           APP_NAME=$(grep -E '^name:' pubspec.yaml | awk '{print $2}')
-          echo "::set-output name=app_version::$APP_VERSION"
-          echo "::set-output name=app_name::$APP_NAME"
-          echo "app_version=$APP_VERSION" >> $GITHUB_ENV
-          echo "app_name=$APP_NAME" >> $GITHUB_ENV
+          echo "::set-output name=APP_VERSION::$APP_VERSION"
+          echo "::set-output name=APP_NAME::$APP_NAME"
+          echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
+          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
         shell: bash
 
       - name: Get app version and name (Windows)
@@ -51,16 +51,16 @@ jobs:
         run: |
           $APP_VERSION = (Get-Content -Path pubspec.yaml | Where-Object { $_ -match '^version:' }).Split(':')[1].Trim()
           $APP_NAME = (Get-Content -Path pubspec.yaml | Where-Object { $_ -match '^name:' }).Split(':')[1].Trim()
-          echo "::set-output name=app_version::$APP_VERSION"
-          echo "::set-output name=app_name::$APP_NAME"
-          echo "app_version=$APP_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
-          echo "app_name=$APP_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "::set-output name=APP_VERSION::$APP_VERSION"
+          echo "::set-output name=APP_NAME::$APP_NAME"
+          echo "APP_VERSION=$APP_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "APP_NAME=$APP_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
 
       - name: Print APP_NAME and APP_VERSION
         run: |
-          echo "The app name is ${{ env.app_name }}"
-          echo "The app version is ${{ env.app_version }}"
+          echo "The app name is ${{ env.APP_NAME }}"
+          echo "The app version is ${{ env.APP_VERSION }}"
 
       - name: Set up Flutter
         id: flutter-env
@@ -122,7 +122,7 @@ jobs:
           mkdir -p release
 
           # 手动签名应用
-          codesign --deep --force --verify --verbose --sign "$CERT_FINGERPRINT" build/macos/Build/Products/Release/${{ env.app_name }}.app
+          codesign --deep --force --verify --verbose --sign "$CERT_FINGERPRINT" build/macos/Build/Products/Release/${{ env.APP_NAME }}.app
 
           # 清理证书
           security delete-keychain build.keychain
@@ -136,14 +136,14 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: |
           create-dmg \
-            --volname "${{ env.app_name }} ${{ env.app_version }} Installer" \
+            --volname "${{ env.APP_NAME }} ${{ env.APP_VERSION }} Installer" \
             --background "assets/images/install_background.png" \
             --window-pos 200 120 \
             --window-size 600 400 \
-            --icon "${{ env.app_name }}.app" 200 190 \
+            --icon "${{ env.APP_NAME }}.app" 200 190 \
             --app-drop-link 400 185 \
-            "release/release-${{ env.app_name }}-${{ env.app_version }}.dmg" \
-            "build/macos/Build/Products/Release/${{ env.app_name }}.app"
+            "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg" \
+            "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app"
 
       # Windows 构建
       - name: Create MSIX package
@@ -165,8 +165,8 @@ jobs:
           # 创建 MSIX 包并指定证书
           echo n | dart run msix:create --certificate-path flutter_build_test.pfx --certificate-password "${{ secrets.WIN_CERTIFICATE_PWD }}"
 
-          $sourceFile = "build\windows\x64\runner\Release\${{ env.app_name }}.msix"
-          $newFile = "release\release-${{ env.app_name }}-${{ env.app_version }}.msix"
+          $sourceFile = "build\windows\x64\runner\Release\${{ env.APP_NAME }}.msix"
+          $newFile = "release\release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.msix"
 
           # 确保 release 目录存在
           New-Item -ItemType Directory -Path "release" -Force | Out-Null
@@ -181,14 +181,14 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: macos-artifact
-          path: ./release/release-${{ env.app_name }}-${{ env.app_version }}.dmg
+          path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
 
       - name: Upload Windows artifact
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v3
         with:
           name: windows-artifact
-          path: ./release/release-${{ env.app_name }}-${{ env.app_version }}.msix
+          path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.msix
 
   release:
     needs: build
@@ -215,16 +215,16 @@ jobs:
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          VERSION: ${{ needs.build.outputs.app_version }}
+          VERSION: ${{ needs.build.outputs.APP_VERSION }}
         with:
-          tag_name: "v${{ needs.build.outputs.app_version }}"
-          name: Release ${{ needs.build.outputs.app_name }} ${{ needs.build.outputs.app_version }}
+          tag_name: "v${{ needs.build.outputs.APP_VERSION }}"
+          name: Release ${{ needs.build.outputs.APP_NAME }} ${{ needs.build.outputs.APP_VERSION }}
           body: 'Flutter PC Build and Release'
           draft: false
           prerelease: false
           files: |
-            release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.dmg
-            release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.msix
+            release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.dmg
+            release/release-${{ needs.build.outputs.APP_NAME }}-${{ needs.build.outputs.APP_VERSION }}.msix
 
   merge:
     needs: release
