@@ -67,13 +67,6 @@ jobs:
           flutter build macos --release
           mkdir -p release
 
-          # 手动签名应用
-          codesign --deep --force --verify --verbose --sign "$CERT_FINGERPRINT" build/macos/Build/Products/Release/${{ env.app_name }}.app
-
-          # 清理证书
-          security delete-keychain build.keychain
-          rm -f flutter_build_test.*
-
       - name: Install create-dmg
         if: matrix.os == 'macos-latest'
         run: brew install create-dmg
