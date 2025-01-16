@@ -63,50 +63,8 @@ jobs:
       - name: Build macOS app
         if: matrix.os == 'macos-latest'
         run: |
-          # 解码 base64 证书
-          echo "${{ secrets.MACOS_CERTIFICATE }}" | base64 --decode > flutter_build_test.p12
-
-          # 验证并修复证书格式
-          if ! file flutter_build_test.p12 | grep -q "PKCS12"; then
-            echo "Warning: Certificate format may be invalid, attempting to fix..."
-            openssl pkcs12 -in flutter_build_test.p12 -out fixed_cert.p12 -nodes -passin pass:"${{ secrets.MACOS_CERTIFICATE_PWD }}" -passout pass:"${{ secrets.MACOS_CERTIFICATE_PWD }}"
-            if [ $? -eq 0 ]; then
-              mv fixed_cert.p12 flutter_build_test.p12
-              echo "Certificate format fixed successfully"
-            else
-              echo "Error: Failed to fix certificate format"
-              exit 1
-            fi
-          fi
-
-          # 安装证书到钥匙串
-          security create-keychain -p "${{ secrets.MACOS_CERTIFICATE_PWD }}" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "${{ secrets.MACOS_CERTIFICATE_PWD }}" build.keychain
-          
-          # 设置 keychain 超时
-          security set-keychain-settings -lut 3600 build.keychain
-          
-          # 导入证书并设置访问控制
-          security import flutter_build_test.p12 -k build.keychain -P "${{ secrets.MACOS_CERTIFICATE_PWD }}" -T /usr/bin/codesign -T /usr/bin/productsign || {
-            echo "Failed to import certificate"
-            security delete-keychain build.keychain
-            exit 1
-          }
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "${{ secrets.MACOS_CERTIFICATE_PWD }}" build.keychain
-          
-          # 验证证书安装
-          security find-identity -v -p codesigning build.keychain
-          
-          # 调试 keychain 状态
-          security list-keychains
-          security show-keychain-info build.keychain
-
-          # 获取证书指纹
-          CERT_FINGERPRINT=$(security find-certificate -c "flutter_build_test" -p build.keychain | openssl x509 -noout -fingerprint -sha1 | sed 's/://g' | cut -d= -f2)
-
           # 构建应用并签名
-          flutter build macos --release --dart-define=CODESIGN_IDENTITY="$CERT_FINGERPRINT"
+          flutter build macos --release
           mkdir -p release
 
           # 手动签名应用
@@ -137,7 +95,21 @@ jobs:
       - name: Create MSIX package
         if: matrix.os == 'windows-latest'
         run: |
-          echo y | dart run msix:create
+          # 解码 base64 证书
+          echo "${{ secrets.WIN_CERTIFICATE }}" | base64 --decode > flutter_build_test.pfx
+
+          # 检查并安装 .pfx 证书到受信任的根和发布者存储区
+          $certPath = "flutter_build_test.pfx"
+          if (-Not (Test-Path $certPath)) {
+              Write-Error "Certificate file not found: $certPath"
+              exit 1
+          }
+          $certPassword = ConvertTo-SecureString -String "${{ secrets.WIN_CERTIFICATE_PWD }}" -AsPlainText -Force
+          Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\Root -Password $certPassword
+          Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\TrustedPublisher -Password $certPassword
+
+          创建 MSIX 包并指定证书
+          echo n | dart run msix:create --certificate-path flutter_build_test.pfx --certificate-password "${{ secrets.WIN_CERTIFICATE_PWD }}"
 
           $sourceFile = "build\windows\x64\runner\Release\${{ env.app_name }}.msix"
           $newFile = "release\release-${{ env.app_name }}-${{ env.app_version }}.msix"
