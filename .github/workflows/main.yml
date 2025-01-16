@@ -94,11 +94,7 @@ jobs:
 
           # 安装 .crt 证书到受信任的根证书颁发机构
           $certPath = "flutter_build_test.crt"
-          $certs = System.Security.Cryptography.X509Certificates.X509Certificate2::CreateFromCertFile($certPath)
-          $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("TrustedPublisher", "LocalMachine")
-          $store.Open("ReadWrite")
-          $store.Add($certs)
-          $store.Close()
+          Import-Certificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\TrustedPublisher
           
           # 创建 MSIX 包
           echo n | dart run msix:create
