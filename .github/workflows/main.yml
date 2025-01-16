@@ -92,20 +92,16 @@ jobs:
           $env:MSIX_CERT_PASSWORD = "flutter_build_test"
           $env:MSIX_NO_PROMPT = "true"
 
-          # 安装 macOS 生成的 p12 证书到受信任的根证书颁发机构
-          $certPath = "flutter_build_test.p12"
-          $certs = Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\Root -Password (ConvertTo-SecureString -String $env:MSIX_CERT_PASSWORD -AsPlainText -Force)
-          
-          # 将证书添加到受信任的发布者存储区
+          # 安装 .crt 证书到受信任的根证书颁发机构
+          $certPath = "flutter_build_test.crt"
+          $certs = System.Security.Cryptography.X509Certificates.X509Certificate2::CreateFromCertFile($certPath)
           $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("TrustedPublisher", "LocalMachine")
           $store.Open("ReadWrite")
-          foreach ($cert in $certs) {
-              $store.Add($cert)
-          }
+          $store.Add($certs)
           $store.Close()
-
+          
           # 创建 MSIX 包
-          echo y | dart run msix:create
+          echo n | dart run msix:create
 
           $sourceFile = "build\windows\x64\runner\Release\${{ env.app_name }}.msix"
           $newFile = "release\release-${{ env.app_name }}-${{ env.app_version }}.msix"

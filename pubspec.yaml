@@ -22,10 +22,13 @@ msix_config:
   identity_name: com.example.flutter.build.test
   msix_version: 1.0.0.0
   
-  certificate:
-    generate: false
-    path: flutter_build_test.p12
-    password: flutter_build_test
+  # certificate:
+  #   generate: false
+  #   path: flutter_build_test.p12
+  #   password: flutter_build_test
+
+  certificate_path: flutter_build_test.crt
+  certificate_password: flutter_build_test
   
   icons:
     background_color: white
