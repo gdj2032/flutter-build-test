@@ -94,12 +94,14 @@ jobs:
 
           # 安装 macOS 生成的 p12 证书到受信任的根证书颁发机构
           $certPath = "flutter_build_test.p12"
-          $cert = Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\Root -Password (ConvertTo-SecureString -String $env:MSIX_CERT_PASSWORD -AsPlainText -Force)
+          $certs = Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\Root -Password (ConvertTo-SecureString -String $env:MSIX_CERT_PASSWORD -AsPlainText -Force)
           
           # 将证书添加到受信任的发布者存储区
           $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("TrustedPublisher", "LocalMachine")
           $store.Open("ReadWrite")
-          $store.Add($cert)
+          foreach ($cert in $certs) {
+              $store.Add($cert)
+          }
           $store.Close()
 
           # 创建 MSIX 包
