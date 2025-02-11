@@ -169,11 +169,11 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+          # 确保 GitHub Actions 具有推送权限
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Merge to Main/Master
         run: |
-          git config --global user.email "${{ secrets.USER_NAME }}"
-          git config --global user.name "${{ secrets.USER_PASSWORD }}"
           MAIN_BRANCH="main"
           CURRENT_BRANCH=$(echo $GITHUB_REF | cut -d'/' -f3-)
 
@@ -190,4 +190,4 @@ jobs:
           # 推送更新到远程仓库
           git push origin $MAIN_BRANCH
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
