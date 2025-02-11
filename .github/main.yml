@@ -162,14 +162,14 @@ jobs:
       # 上传构建产物
       - name: Upload macOS artifact
         if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: macos-artifact
           path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
 
       - name: Upload Windows artifact
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: windows-artifact
           path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
@@ -183,13 +183,13 @@ jobs:
 
       # 下载构建产物
       - name: Download macOS artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: macos-artifact
           path: ./release
 
       - name: Download Windows artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: windows-artifact
           path: ./release
