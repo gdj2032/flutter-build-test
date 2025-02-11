@@ -9,17 +9,17 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       os: [macos-latest, windows-latest]
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
 
-  #   outputs:
-  #     app_name: ${{ steps.get_app_info.outputs.app_name || steps.get_app_info_win.outputs.app_name }}
-  #     app_version: ${{ steps.get_app_info.outputs.app_version || steps.get_app_info_win.outputs.app_version }}
+    outputs:
+      app_name: ${{ steps.get_app_info.outputs.app_name || steps.get_app_info_win.outputs.app_name }}
+      app_version: ${{ steps.get_app_info.outputs.app_version || steps.get_app_info_win.outputs.app_version }}
 
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v2
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
 
   #     # 获取应用信息
   #     - name: Get app version and name
@@ -123,12 +123,12 @@ jobs:
   #         name: windows-artifact
   #         path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
 
-  # release:
-  #   needs: build
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v2
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
 
   #     # 下载构建产物
   #     - name: Download macOS artifact
@@ -160,7 +160,7 @@ jobs:
   #           release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.exe
 
   merge:
-    # needs: release
+    needs: release
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/heads/release/')
 
