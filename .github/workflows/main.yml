@@ -3,8 +3,8 @@ name: Flutter PC Build and Release
 on:
   push:
     branches:
+      - /^release\/.*$/
       - 'release/**'
-
 
 jobs:
   build:
@@ -38,8 +38,8 @@ jobs:
         if: matrix.os == 'windows-latest'
         id: get_app_info_win
         run: |
-          $APP_VERSION = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'version:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
-          $APP_NAME = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'name:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
+          $APP_VERSION = (Get-Content -Path pubspec.yaml | Where-Object { $_ -match '^version:' }).Split(':')[1].Trim()
+          $APP_NAME = (Get-Content -Path pubspec.yaml | Where-Object { $_ -match '^name:' }).Split(':')[1].Trim()
           echo "::set-output name=app_version::$APP_VERSION"
           echo "::set-output name=app_name::$APP_NAME"
           echo "APP_VERSION=$APP_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
@@ -67,29 +67,9 @@ jobs:
           flutter build macos --release
           mkdir -p release
 
-      - name: Cache Homebrew dependencies
+      - name: Install create-dmg
         if: matrix.os == 'macos-latest'
-        id: cache-homebrew
-        uses: actions/cache@v2
-        with:
-          path: /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core
-          key: homebrew-dependencies-${{ runner.os }}-v1
-          restore-keys: |
-            homebrew-dependencies-${{ runner.os }}-
-
-      - name: Install create-dmg via Homebrew
-        if: matrix.os == 'macos-latest' && steps.cache-homebrew.outputs.cache-hit != 'true'
         run: brew install create-dmg
-
-      - name: Cache create-dmg
-        if: matrix.os == 'macos-latest'
-        id: cache-create-dmg
-        uses: actions/cache@v2
-        with:
-          path: /usr/local/Caskroom/create-dmg
-          key: create-dmg-${{ runner.os }}-v1
-          restore-keys: |
-            create-dmg-${{ runner.os }}-
 
       - name: Create DMG for macOS
         if: matrix.os == 'macos-latest'
@@ -105,64 +85,28 @@ jobs:
             "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app"
 
       # Windows 构建
-      - name: Cache Chocolatey
-        if: matrix.os == 'windows-latest'
-        id: chocolatey-cache
-        uses: actions/cache@v2
-        with:
-          path: C:\ProgramData\chocolatey
-          key: ${{ runner.os }}-chocolatey-v1
-          restore-keys: |
-            ${{ runner.os }}-chocolatey-
-
-      - name: Install Chocolatey (if cache miss)
-        if: matrix.os == 'windows-latest' && steps.chocolatey-cache.outputs.cache-hit != 'true'
-        run: |
-          Write-Host "Installing Chocolatey..."
-          Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-          choco feature enable -n allowGlobalConfirmation
-
-      - name: Check Chocolatey installation
-        if: matrix.os == 'windows-latest'
-        run: choco --version
-
-      - name: Cache Advanced Installer
-        if: matrix.os == 'windows-latest'
-        id: advanced-installer-cache
-        uses: actions/cache@v2
-        with:
-          path: C:\Program Files (x86)\Caphyon\Advanced Installer 22.3
-          key: ${{ runner.os }}-advanced-installer-v1
-          restore-keys: |
-            ${{ runner.os }}-advanced-installer-
-
-      - name: Install Advanced Installer (if cache miss)
-        if: matrix.os == 'windows-latest' && steps.advanced-installer-cache.outputs.cache-hit != 'true'
-        run: |
-          Write-Host "Installing Advanced Installer..."
-          choco install advanced-installer --version=22.3 -y
-
-      - name: Check Advanced Installer installation
-        run: |
-          Write-Host "Checking Advanced Installer installation..."
-          & 'C:\Program Files (x86)\Caphyon\Advanced Installer 22.3\bin\x64\aiCmd.exe' /?
-
-      - name: Check aiCmd path
+      - name: Download Inno Setup
         if: matrix.os == 'windows-latest'
         run: |
-          Get-Command aiCmd.exe
+          Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/ispack.exe" -OutFile "ispack.exe"
+          Start-Process -FilePath ".\ispack.exe" -ArgumentList "/SP-", "/VERYSILENT", "/NORESTART", "/DIR=C:\Program Files (x86)\Inno Setup 6" -Wait
+          Remove-Item .\ispack.exe
 
       - name: Build Windows app
         if: matrix.os == 'windows-latest'
         run: |
           flutter build windows --release
-          mkdir -p release
-          cp "build/windows/x64/runner/Release/${{ env.APP_NAME }}.exe"
 
-      - name: Create Installer using Advanced Installer
+      - name: Compile Inno Setup script
         if: matrix.os == 'windows-latest'
         run: |
-          aiCmd.exe /build .\config.ai /projectPath="${GITHUB_WORKSPACE}" /outputPath="./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /Q "/DMyAppVersion=${{ env.APP_VERSION }}" "/DMyAppName=${{ env.APP_NAME }}" .\setup.iss
+
+      - name: print ls
+        run: ls
+
+      - name: print ls for release
+        run: ls release
 
       # 上传构建产物
       - name: Upload macOS artifact
@@ -203,8 +147,8 @@ jobs:
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
         env:
-          # GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.build.outputs.app_version }}
         with:
           tag_name: "v${{ steps.get_version_name.outputs.app_version }}"
@@ -216,28 +160,16 @@ jobs:
             release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.dmg
             release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.exe
 
-  release_and_merge:
+  merge:
+    needs: release
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/release/')
+    if: startsWith(github.ref, 'refs/heads/release/')
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
           fetch-depth: 0  # 确保所有历史记录都被获取，以便能够正确合并
-
-      - name: Create Release
-        uses: ncipollo/release-action@v1
-        with:
-          allowUpdates: true
-          tag: ${{ github.ref }}
-          commit: ${{ github.sha }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          draft: false
-          prerelease: false
-          name: "Release ${{ github.ref }}"
-          body: |
-            New release for ${{ github.ref }}
 
       - name: Merge to Main/Master
         run: |
