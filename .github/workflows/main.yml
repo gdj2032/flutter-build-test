@@ -1,10 +1,10 @@
-name: Flutter Build and Release
+name: Flutter PC Build and Release
 
 on:
   push:
     branches:
-      - 'release/0.0.1'
       - /^release\/.*$/
+      - 'release/**'
 
 jobs:
   build:
@@ -14,130 +14,185 @@ jobs:
         os: [macos-latest, windows-latest]
 
     outputs:
-      app_version: ${{ steps.set_env.outputs.app_version }}
-      app_name: ${{ steps.set_env.outputs.app_name }}
+      app_name: ${{ steps.get_app_info.outputs.app_name || steps.get_app_info_win.outputs.app_name }}
+      app_version: ${{ steps.get_app_info.outputs.app_version || steps.get_app_info_win.outputs.app_version }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # macOS/Linux get app version and name
+  #     # 获取应用信息
+  #     - name: Get app version and name
+  #       id: get_app_info
+  #       if: matrix.os != 'windows-latest'
+  #       run: |
+  #         APP_VERSION=$(grep -E '^version:' pubspec.yaml | awk '{print $2}' | tr -d "'")
+  #         APP_NAME=$(grep -E '^name:' pubspec.yaml | awk '{print $2}')
+  #         echo "::set-output name=app_version::$APP_VERSION"
+  #         echo "::set-output name=app_name::$APP_NAME"
+  #         echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
+  #         echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
+  #       shell: bash
 
-      - name: Get app version and name for macOS/Linux
-        if: matrix.os != 'windows-latest'
-        run: |
-          APP_VERSION=$(grep -E '^version:' pubspec.yaml | awk '{print $2}' | tr -d "'")
-          APP_NAME=$(grep -E '^name:' pubspec.yaml | awk '{print $2}')
-          echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
-          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
-          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
-          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
-        shell: bash
+  #     - name: Get app version and name (Windows)
+  #       if: matrix.os == 'windows-latest'
+  #       id: get_app_info_win
+  #       run: |
+  #         $APP_VERSION = (Get-Content -Path pubspec.yaml | Where-Object { $_ -match '^version:' }).Split(':')[1].Trim()
+  #         $APP_NAME = (Get-Content -Path pubspec.yaml | Where-Object { $_ -match '^name:' }).Split(':')[1].Trim()
+  #         echo "::set-output name=app_version::$APP_VERSION"
+  #         echo "::set-output name=app_name::$APP_NAME"
+  #         echo "APP_VERSION=$APP_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
+  #         echo "APP_NAME=$APP_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append
+  #       shell: pwsh
 
-      - name: Print APP_NAME and APP_VERSION for macOS/Linux
-        if: matrix.os != 'windows-latest'
-        run: |
-          echo "The app name is ${{ env.APP_NAME }}"
-          echo "The app version is ${{ env.APP_VERSION }}"
-        shell: bash
+  #     - name: Print APP_NAME and APP_VERSION
+  #       run: |
+  #         echo "The app name is ${{ env.APP_NAME }}"
+  #         echo "The app version is ${{ env.APP_VERSION }}"
 
-      # Windows get app version and name
+  #     - name: Set up Flutter
+  #       id: flutter-env
+  #       uses: subosito/flutter-action@v2
+  #       with:
+  #         flutter-version: '3.24.4'
 
-      - name: Get app version and name for Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          $APP_NAME = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'name:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
-          $APP_VERSION = (Get-Content -Path pubspec.yaml | Select-String -Pattern 'version:' | ForEach-Object { $_.Line.Split(':')[1].Trim() })
-          echo "APP_VERSION=$APP_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
-          echo "APP_NAME=$APP_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append
-          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
-          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
-        shell: pwsh
+  #     - name: Setup Flutter environment
+  #       run: flutter pub get
 
-      - name: Print APP_NAME and APP_VERSION  for Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          echo "The app name is ${{ env.APP_NAME }}"
-          echo "The app version is ${{ env.APP_VERSION }}"
-        shell: pwsh
+  #     # macOS 构建
+  #     - name: Build macOS app
+  #       if: matrix.os == 'macos-latest'
+  #       run: |
+  #         flutter build macos --release
+  #         mkdir -p release
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.4'
+  #     - name: Install create-dmg
+  #       if: matrix.os == 'macos-latest'
+  #       run: brew install create-dmg
 
-      - name: Setup Flutter environment
-        run: flutter pub get
+  #     - name: Create DMG for macOS
+  #       if: matrix.os == 'macos-latest'
+  #       run: |
+  #         create-dmg \
+  #           --volname "${{ env.APP_NAME }} ${{ env.APP_VERSION }} Installer" \
+  #           --background "assets/images/install_background.png" \
+  #           --window-pos 200 120 \
+  #           --window-size 600 400 \
+  #           --icon "${{ env.APP_NAME }}.app" 200 190 \
+  #           --app-drop-link 400 185 \
+  #           "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg" \
+  #           "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app"
 
-      - name: Determine branch type
-        id: determine-branch
-        run: echo "::set-output name=branch_type::$(if [[ $GITHUB_REF =~ ^refs/heads/release/.*$ ]]; then echo 'release'; else echo 'other'; fi)"
-        shell: bash
+  #     # Windows 构建
+  #     - name: Download Inno Setup
+  #       if: matrix.os == 'windows-latest'
+  #       run: |
+  #         Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/ispack.exe" -OutFile "ispack.exe"
+  #         Start-Process -FilePath ".\ispack.exe" -ArgumentList "/SP-", "/VERYSILENT", "/NORESTART", "/DIR=C:\Program Files (x86)\Inno Setup 6" -Wait
+  #         Remove-Item .\ispack.exe
 
-      - name: Build and package app for macOS
-        if: matrix.os == 'macos-latest' && steps.determine-branch.outputs.branch_type == 'release'
-        run: |
-          flutter build macos --release
-          mkdir -p release
-          hdiutil create -volname "${{ env.APP_NAME }}" \
-                         -srcfolder "build/macos/Build/Products/Release/${{ env.APP_NAME }}.app" \
-                         -ov -format UDZO "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg"
-        shell: bash
+  #     - name: Build Windows app
+  #       if: matrix.os == 'windows-latest'
+  #       run: |
+  #         flutter build windows --release
 
-      - name: Build and package app for Windows
-        if: matrix.os == 'windows-latest' && steps.determine-branch.outputs.branch_type == 'release'
-        run: |
-          flutter build windows --release
-          mkdir -p release
-          cp "build/windows/x64/runner/Release/${{ env.APP_NAME }}.exe" "release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe"
-        shell: pwsh
+  #     - name: Compile Inno Setup script
+  #       if: matrix.os == 'windows-latest'
+  #       run: |
+  #         & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /Q "/DMyAppVersion=${{ env.APP_VERSION }}" "/DMyAppName=${{ env.APP_NAME }}" .\setup.iss
+
+  #     - name: print ls
+  #       run: ls
+
+  #     - name: print ls for release
+  #       run: ls release
+
+  #     # 上传构建产物
+  #     - name: Upload macOS artifact
+  #       if: matrix.os == 'macos-latest'
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: macos-artifact
+  #         path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.dmg
+
+  #     - name: Upload Windows artifact
+  #       if: matrix.os == 'windows-latest'
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: windows-artifact
+  #         path: ./release/release-${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe
 
   release:
-    needs: build  # 确保 build 完成后再进行发布
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-latest, windows-latest]
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+  #     # 下载构建产物
+  #     - name: Download macOS artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: macos-artifact
+  #         path: ./release
+
+  #     - name: Download Windows artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: windows-artifact
+  #         path: ./release
+
+  #     # 上传 release
+  #     - name: Upload Release Assets
+  #       uses: softprops/action-gh-release@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+  #         VERSION: ${{ needs.build.outputs.app_version }}
+  #       with:
+  #         tag_name: "v${{ needs.build.outputs.app_version }}"
+  #         name: Release ${{ needs.build.outputs.app_name }} ${{ needs.build.outputs.app_version }}
+  #         body: 'Flutter PC Build and Release'
+  #         draft: false
+  #         prerelease: false
+  #         files: |
+  #           release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.dmg
+  #           release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.exe
+
+  merge:
+    needs: release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/heads/release/')
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          # 使用 PAT 来检出代码
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
-    - name: Print app_name and app_version
-      run: |
-        echo "The app name is ${{ needs.build.outputs.app_name }}"
-        echo "The app version is ${{ needs.build.outputs.app_version }}"
+      - name: Configure Git user
+        run: |
+          git config --global user.email "${{ secrets.USER_NAME }}"
+          git config --global user.name "${{ secrets.USER_PASSWORD }}"
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: "v${{ needs.build.outputs.app_version }}"
-        release_name: "Release v${{ needs.build.outputs.app_version }}"
-        body: "Release of version ${{ needs.build.outputs.app_version }}"
-        draft: false
-        prerelease: false
+      - name: Merge to Main/Master
+        run: |
+          MAIN_BRANCH="main"
+          CURRENT_BRANCH=$(echo $GITHUB_REF | cut -d'/' -f3-)
 
-    - name: Upload Release Asset for macOS
-      if: github.ref == 'refs/heads/release/macOS'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.dmg
-        asset_name: release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.dmg
-        asset_content_type: application/x-apple-diskimage
+          echo "The current branch is $CURRENT_BRANCH"
 
-    - name: Upload Release Asset for Windows
-      if: github.ref == 'refs/heads/release/windows'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.exe
-        asset_name: release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.exe
-        asset_content_type: application/octet-stream
+          # 检查是否已经有最新的主分支
+          git fetch origin $MAIN_BRANCH
+          git checkout $MAIN_BRANCH
+          git pull origin $MAIN_BRANCH
+
+          # 强制合并当前分支到主分支
+          git merge --no-ff $CURRENT_BRANCH -m "Merge branch '$CURRENT_BRANCH' into $MAIN_BRANCH"
+
+          # 使用 PAT 来推送代码
+          git push origin $MAIN_BRANCH
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
