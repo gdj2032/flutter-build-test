@@ -172,6 +172,11 @@ jobs:
           # 使用 PAT 来检出代码
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
+      - name: Configure Git user
+        run: |
+          git config --global user.email "${{ secrets.USER_NAME }}"
+          git config --global user.name "${{ secrets.USER_PASSWORD }}"
+
       - name: Merge to Main/Master
         run: |
           MAIN_BRANCH="main"
