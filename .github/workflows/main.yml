@@ -172,8 +172,6 @@ jobs:
 
       - name: Merge to Main/Master
         run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
           MAIN_BRANCH="main"
           CURRENT_BRANCH=$(echo $GITHUB_REF | cut -d'/' -f3-)
 
