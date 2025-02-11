@@ -148,10 +148,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.build.outputs.app_version }}
         with:
-          tag_name: "v${{ steps.get_version_name.outputs.app_version }}"
+          tag_name: "v${{ needs.build.outputs.app_version }}"
           name: Release ${{ needs.build.outputs.app_name }} ${{ needs.build.outputs.app_version }}
           body: 'Flutter PC Build and Release'
           draft: false
