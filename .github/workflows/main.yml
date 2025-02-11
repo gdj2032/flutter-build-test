@@ -175,7 +175,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
           MAIN_BRANCH="main"
-          CURRENT_BRANCH=$(basename $GITHUB_REF)
+          CURRENT_BRANCH=$(echo $GITHUB_REF | cut -d'/' -f3-)
 
           echo "The current branch is $CURRENT_BRANCH"
 
