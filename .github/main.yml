@@ -3,8 +3,8 @@ name: Flutter PC Build and Release
 on:
   push:
     branches:
-      - 'release/0.0.1'
-      - /^release\/.*$/
+      - 'release/**'
+
 
 jobs:
   build:
