@@ -172,6 +172,8 @@ jobs:
 
       - name: Merge to Main/Master
         run: |
+          git config --global user.email "${{ secrets.USER_NAME }}"
+          git config --global user.name "${{ secrets.USER_PASSWORD }}"
           MAIN_BRANCH="main"
           CURRENT_BRANCH=$(echo $GITHUB_REF | cut -d'/' -f3-)
 
