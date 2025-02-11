@@ -169,13 +169,8 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-          # 确保 GitHub Actions 具有推送权限
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Configure Git user
-        run: |
-          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-          git config --global user.name "${GITHUB_ACTOR}"
+          # 使用 PAT 来检出代码
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
       - name: Merge to Main/Master
         run: |
@@ -192,7 +187,7 @@ jobs:
           # 强制合并当前分支到主分支
           git merge --no-ff $CURRENT_BRANCH -m "Merge branch '$CURRENT_BRANCH' into $MAIN_BRANCH"
 
-          # 推送更新到远程仓库
+          # 使用 PAT 来推送代码
           git push origin $MAIN_BRANCH
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
