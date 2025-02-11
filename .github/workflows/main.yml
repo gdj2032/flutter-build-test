@@ -68,6 +68,7 @@ jobs:
           mkdir -p release
 
       - name: Cache Homebrew dependencies
+        if: matrix.os == 'macos-latest'
         id: cache-homebrew
         uses: actions/cache@v2
         with:
@@ -81,6 +82,7 @@ jobs:
         run: brew install create-dmg
 
       - name: Cache create-dmg
+        if: matrix.os == 'macos-latest'
         id: cache-create-dmg
         uses: actions/cache@v2
         with:
@@ -104,6 +106,7 @@ jobs:
 
       # Windows 构建
       - name: Cache Chocolatey
+        if: matrix.os == 'windows-latest'
         id: chocolatey-cache
         uses: actions/cache@v2
         with:
@@ -120,9 +123,11 @@ jobs:
           choco feature enable -n allowGlobalConfirmation
 
       - name: Check Chocolatey installation
+        if: matrix.os == 'windows-latest'
         run: choco --version
 
       - name: Cache Advanced Installer
+        if: matrix.os == 'windows-latest'
         id: advanced-installer-cache
         uses: actions/cache@v2
         with:
