@@ -168,21 +168,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0  # 确保所有历史记录都被获取，以便能够正确合并
+          fetch-depth: 0
 
       - name: Merge to Main/Master
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
-          MAIN_BRANCH="main"  # 或者 "master" 根据你的默认分支名称
-          CURRENT_BRANCH=$(echo $GITHUB_REF | cut -d'/' -f3)
+          MAIN_BRANCH="main"
+          CURRENT_BRANCH=$(basename $GITHUB_REF)
+
+          echo "The current branch is $CURRENT_BRANCH"
 
           # 检查是否已经有最新的主分支
           git fetch origin $MAIN_BRANCH
           git checkout $MAIN_BRANCH
           git pull origin $MAIN_BRANCH
 
-          # 合并当前分支到主分支
+          # 强制合并当前分支到主分支
           git merge --no-ff $CURRENT_BRANCH -m "Merge branch '$CURRENT_BRANCH' into $MAIN_BRANCH"
 
           # 推送更新到远程仓库
