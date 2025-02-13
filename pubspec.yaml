@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  tray_manager: ^0.3.2
 
 dev_dependencies:
   flutter_test:

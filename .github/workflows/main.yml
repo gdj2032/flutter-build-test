@@ -52,9 +52,7 @@ jobs:
           echo "The app name is ${{ env.APP_NAME }}"
           echo "The app version is ${{ env.APP_VERSION }}"
 
-      # 设置 Flutter 如果存在就不需要执行
       - name: Set up Flutter
-        if: steps.get_app_info.outputs.flutter != 'true'
         id: flutter
         uses: subosito/flutter-action@v2
         with:
