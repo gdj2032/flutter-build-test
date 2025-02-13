@@ -1,7 +1,7 @@
 ; 最简化的 Inno Setup 脚本
 
-#define MyAppName "flutter_build_test"
-#define MyAppVersion "0.0.1"
+#define MyAppName "{#MyAppName}"
+#define MyAppVersion "{#MyAppVersion}"
 #define OutputDir "release"
 
 [Languages]
