@@ -104,7 +104,7 @@ jobs:
       - name: Compile Inno Setup script
         if: matrix.os == 'windows-latest'
         run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /Q "/DMyAppVersion=${{ env.APP_VERSION }}" "/DMyAppName=${{ env.APP_NAME }}" .\config\InnoSetup6\setup.iss
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /Q "/DMyAppVersion=${{ env.APP_VERSION }}" "/DMyAppName=${{ env.APP_NAME }}" .\setup.iss
 
       - name: print ls
         run: ls
