@@ -17,6 +17,7 @@ OutputDir={#OutputDir}
 OutputBaseFilename=release-{#MyAppName}-{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
+UsePreviousLanguage=no
 
 [Files]
 ; 假设你的应用构建输出在 build\windows\x64\runner\Release 目录下
