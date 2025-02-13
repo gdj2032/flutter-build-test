@@ -53,6 +53,7 @@ jobs:
           echo "The app version is ${{ env.APP_VERSION }}"
 
       - name: Set up Flutter
+        if: !exists('/opt/flutter')
         id: flutter-env
         uses: subosito/flutter-action@v2
         with:

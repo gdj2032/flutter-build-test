@@ -1,7 +1,7 @@
 ; 最简化的 Inno Setup 脚本
 
-#define AppName "{MyAppName}"
-#define AppVersion "{MyAppVersion}"
+#define AppName MyAppName
+#define AppVersion MyAppVersion
 #define OutputDir "release"
 
 [Languages]
