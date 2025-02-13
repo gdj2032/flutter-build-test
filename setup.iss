@@ -5,6 +5,9 @@
 #define OutputDir "release"
 #define OutputBaseFilename "setup"
 
+[Languages]
+Name: "zh_CN"; MessagesFile: "compiler:Default.isl"
+
 [Setup]
 ; 应用程序的基本信息
 AppName={#MyAppName}
