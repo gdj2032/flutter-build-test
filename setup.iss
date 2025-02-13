@@ -1,7 +1,7 @@
 ; 最简化的 Inno Setup 脚本
 
-#define MyAppName "{%MyAppName}"
-#define MyAppVersion "{%MyAppVersion}"
+#define AppName "{#MyAppName}"
+#define AppVersion "{#MyAppVersion}"
 #define OutputDir "release"
 
 [Languages]
@@ -9,12 +9,12 @@ Name: "zh_CN"; MessagesFile: "config\InnoSetUp6\languages\ChineseSimplified.isl.
 
 [Setup]
 ; 应用程序的基本信息
-AppName={#MyAppName}
-AppVersion={#MyAppVersion}
-DefaultDirName={pf}\{#MyAppName}
-DefaultGroupName={#MyAppName}
+AppName={#AppName}
+AppVersion={#AppVersion}
+DefaultDirName={pf}\{#AppName}
+DefaultGroupName={#AppName}
 OutputDir={#OutputDir}
-OutputBaseFilename=release-{#MyAppName}-{#MyAppVersion}
+OutputBaseFilename=release-{#AppName}-{#AppVersion}
 Compression=lzma
 SolidCompression=yes
 UsePreviousLanguage=no
@@ -25,6 +25,6 @@ Source: "build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignorever
 
 [Icons]
 ; 在开始菜单中创建快捷方式
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppName}.exe"
+Name: "{group}\{#AppName}"; Filename: "{app}\{#AppName}.exe"
 ; 在桌面上创建快捷方式
-Name: "{userdesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppName}.exe"
+Name: "{userdesktop}\{#AppName}"; Filename: "{app}\{#AppName}.exe"
