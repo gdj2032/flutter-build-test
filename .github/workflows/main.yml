@@ -89,9 +89,12 @@ jobs:
       - name: Download Inno Setup
         if: matrix.os == 'windows-latest'
         run: |
-          Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/ispack.exe" -OutFile "ispack.exe"
-          Start-Process -FilePath ".\ispack.exe" -ArgumentList "/SP-", "/VERYSILENT", "/NORESTART", "/DIR=C:\Program Files (x86)\Inno Setup 6" -Wait
-          Remove-Item .\ispack.exe
+          # 判断 ISCC.exe是否存在
+          if (-Not (Test-Path -Path "C:\Program Files (x86)\Inno Setup 6\ISCC.exe")) {
+            Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/ispack.exe" -OutFile "ispack.exe"
+            Start-Process -FilePath ".\ispack.exe" -ArgumentList "/SP-", "/VERYSILENT", "/NORESTART", "/DIR=C:\Program Files (x86)\Inno Setup 6" -Wait
+            Remove-Item .\ispack.exe
+          }
 
       - name: Build Windows app
         if: matrix.os == 'windows-latest'

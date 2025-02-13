@@ -5,7 +5,7 @@
 #define OutputDir "release"
 
 [Languages]
-Name: "zh_CN"; MessagesFile: ".\languages\ChineseSimplified.isl.txt"
+Name: "zh_CN"; MessagesFile: "config\InnoSetUp6\languages\ChineseSimplified.isl.txt"
 
 [Setup]
 ; 应用程序的基本信息
@@ -21,7 +21,7 @@ UsePreviousLanguage=no
 
 [Files]
 ; 假设你的应用构建输出在 build\windows\x64\runner\Release 目录下
-Source: "..\..\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 ; 在开始菜单中创建快捷方式
