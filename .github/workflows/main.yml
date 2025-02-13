@@ -11,7 +11,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
+        # os: [macos-latest, windows-latest]
+        os: [windows-latest]
 
     outputs:
       app_name: ${{ steps.get_app_info.outputs.app_name || steps.get_app_info_win.outputs.app_name }}
@@ -156,8 +157,8 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.dmg
             release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.exe
+          # release/release-${{ needs.build.outputs.app_name }}-${{ needs.build.outputs.app_version }}.dmg
 
   # merge:
   #   needs: release
