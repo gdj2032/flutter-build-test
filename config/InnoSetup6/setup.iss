@@ -5,7 +5,7 @@
 #define OutputDir "release"
 
 [Languages]
-Name: "zh_CN"; MessagesFile: "config\InnoSetup6\languages\ChineseSimplified.isl.txt"
+Name: "zh_CN"; MessagesFile: ".\languages\ChineseSimplified.isl.txt"
 
 [Setup]
 ; 应用程序的基本信息
